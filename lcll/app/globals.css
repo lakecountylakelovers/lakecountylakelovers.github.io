@@ -19,7 +19,6 @@
 
   body {
     background:
-      radial-gradient(circle at top, rgba(255, 255, 255, 0.48), transparent 38%),
       var(--background);
     color: var(--foreground);
     font-family: var(--font-body), sans-serif;

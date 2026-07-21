@@ -17,13 +17,13 @@ const handleButtons = async (formData: FormData) => {
 
 const Home = () => {
   return (
-    <main className="mx-auto flex min-h-screen min-w-screen items-center px-6 py-12 sm:px-8 lg:px-12">
+    <main className="mx-auto flex min-h-dvh w-full items-center px-6 py-12 sm:px-8 lg:px-12">
       <section className="flex w-full flex-col gap-20 rounded-[2rem] border border-white/85 bg-white/65 p-7 shadow-[0_24px_80px_rgba(23,38,58,0.16)] backdrop-blur-md sm:p-8 lg:p-10">
         <h1 className="w-full max-w-5xl text-center mx-auto">The Phosphorus Calculator</h1>
 
         <div className="grid gap-7 lg:grid-cols-[0.95fr_0.95fr] lg:items-center">
           <div className="relative overflow-hidden rounded-[1.9rem] aspect-[16/10] shadow-2xl shadow-slate-900/20 ring-1 ring-white/70 lg:aspect-[4/3]">
-            <div className="absolute inset-0 bg-gradient-to-tr from-slate-950/10 via-transparent to-white/20">
+            <div className="absolute inset-0">
               <Image
                 src="/Lake_Image.jpg"
                 width={1600}
