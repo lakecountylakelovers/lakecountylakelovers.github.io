@@ -243,7 +243,8 @@ interface CalculationResults {
 
 export default function CalculatorClient() {
   const [lakeData, setLakeData] = useState<Record<string, LakeDetails>>({})
-  const [lakeOptions, setLakeOptions] = useState<string[]>([''])
+  type LakeOption = string | { id?: string; value?: string; name?: string; label?: string };
+  const [lakeOptions, setLakeOptions] = useState<LakeOption[]>([]);
   const [loading, setLoading] = useState(true)
 
   const [selectedHelp, setSelectedHelp] = useState<HelpKey>('overview')
