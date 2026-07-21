@@ -88,7 +88,7 @@ const inputRows = [
 
 const optionalUnitRow = {
   key: 'sedimentPhosphorus' as const,
-  label: 'Total Phosphorus (Lake Sediment)',
+  label: 'Total Phosphorus (Sediment)',
   placeholder: '',
   kind: 'number',
   unitOptions: ['mg/kg as P', 'mg/g as P', 'mg/kg as PO4', 'mg/g as PO4'],
