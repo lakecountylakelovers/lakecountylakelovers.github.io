@@ -766,100 +766,105 @@ export default function CalculatorClient() {
                 </button>
               </div>
 
-              <div className="mt-3 grid gap-4 sm:grid-rows-2">
-                {inputRows.map((row) => {
-                  const hasError = validationErrors[row.key] !== '';
-                  return (
-                    <div
-                      key={row.key}
-                      className={`grid gap-2 rounded-2xl border p-2.5 shadow-sm sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_32px] sm:items-center transition-colors duration-200 ${
-                        hasError 
-                          ? 'border-red-400 bg-red-50/50' 
-                          : 'border-slate-200 bg-white'
-                      }`}
-                    >
-                      <div className={`rounded-xl px-3 py-2 transition-colors duration-200 ${hasError ? 'bg-red-100/50' : 'bg-slate-50'}`}>
-                        <div className={`text-sm font-semibold leading-tight ${hasError ? 'text-red-900' : 'text-slate-900'}`}>{row.label}</div>
-                      </div>
+<div className="mt-3 grid gap-4 sm:grid-rows-2">
+  {inputRows.map((row) => {
+    const hasError = validationErrors[row.key] !== '';
+    return (
+      <div
+        key={row.key}
+        className={`grid gap-2 rounded-2xl border p-2.5 shadow-sm sm:grid-cols-[130px_1fr_32px] sm:items-center transition-colors duration-200 ${
+          hasError 
+            ? 'border-red-400 bg-red-50/50' 
+            : 'border-slate-200 bg-white'
+        }`}
+      >
+        {/* Fixed Width Label Box */}
+        <div className={`rounded-xl px-3 py-2 transition-colors duration-200 ${hasError ? 'bg-red-100/50' : 'bg-slate-50'}`}>
+          <div className={`text-sm font-semibold leading-tight ${hasError ? 'text-red-900' : 'text-slate-900'}`}>
+            {row.label}
+          </div>
+        </div>
 
-                      <div className="flex min-w-[250px] flex-col gap-2 sm:flex-row">
-                        <input
-                          type={row.kind}
-                          value={
-                            row.key === 'surfaceArea'
-                              ? surfaceAreaDraft
-                              : row.key === 'meanDepth'
-                                ? meanDepthDraft
-                                : lakePhosphorusDraft
-                          }
-                          onChange={(event) => {
-                            setValidationErrors((current) => ({
-                              ...current,
-                              [row.key]: '',
-                            }))
+        {/* Flexible Input + Unit Dropdown Container */}
+        <div className="flex min-w-0 flex-1 flex-col gap-2 sm:flex-row">
+          <input
+            type={row.kind}
+            value={
+              row.key === 'surfaceArea'
+                ? surfaceAreaDraft
+                : row.key === 'meanDepth'
+                  ? meanDepthDraft
+                  : lakePhosphorusDraft
+            }
+            onChange={(event) => {
+              setValidationErrors((current) => ({
+                ...current,
+                [row.key]: '',
+              }))
 
-                            if (row.key === 'surfaceArea') {
-                              setSurfaceAreaDraft(event.target.value)
-                              return
-                            }
+              if (row.key === 'surfaceArea') {
+                setSurfaceAreaDraft(event.target.value)
+                return
+              }
 
-                            if (row.key === 'meanDepth') {
-                              setMeanDepthDraft(event.target.value)
-                              return
-                            }
+              if (row.key === 'meanDepth') {
+                setMeanDepthDraft(event.target.value)
+                return
+              }
 
-                            setLakePhosphorusDraft(event.target.value)
-                          }}
-                          placeholder={row.placeholder}
-                          className={`min-w-0 flex-1 rounded-xl border px-3 py-2 text-center text-slate-800 shadow-sm outline-none transition focus:ring-2 ${
-                            hasError 
-                              ? 'border-red-300 focus:border-red-400 focus:ring-red-100 bg-red-50/30' 
-                              : 'border-slate-300 focus:border-blue-300 focus:ring-2 focus:ring-blue-100 bg-white'
-                          }`}
-                        />
+              setLakePhosphorusDraft(event.target.value)
+            }}
+            placeholder={row.placeholder}
+            className={`min-w-0 flex-1 rounded-xl border px-3 py-2 text-center text-slate-800 shadow-sm outline-none transition focus:ring-2 ${
+              hasError 
+                ? 'border-red-300 focus:border-red-400 focus:ring-red-100 bg-red-50/30' 
+                : 'border-slate-300 focus:border-blue-300 focus:ring-2 focus:ring-blue-100 bg-white'
+            }`}
+          />
 
-                        <label className="relative flex-none sm:w-[148px]">
-                          <span className="sr-only">{row.label} units</span>
-                          <select
-                            value={activeUnit[row.key]}
-                            onChange={(event) =>
-                              setActiveUnit((current) => ({
-                                ...current,
-                                [row.key]: event.target.value,
-                              }))
-                            }
-                            className={`w-full appearance-none rounded-xl border px-3 py-2 pr-9 text-left text-sm text-slate-700 shadow-sm outline-none transition focus:ring-2 ${
-                              hasError 
-                                ? 'border-red-300 focus:border-red-400 focus:ring-red-100 bg-white' 
-                                : 'border-slate-300 focus:border-blue-300 focus:ring-blue-100 bg-white'
-                            }`}
-                          >
-                            {row.unitOptions.map((unit) => (
-                              <option key={unit} value={unit}>
-                                {unit}
-                              </option>
-                            ))}
-                          </select>
-                          <span aria-hidden="true" className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-slate-500">
-                            ▾
-                          </span>
-                        </label>
-                      </div>
+          <label className="relative min-w-0 sm:w-36 sm:shrink-0">
+            <span className="sr-only">{row.label} units</span>
+            <select
+              value={activeUnit[row.key]}
+              onChange={(event) =>
+                setActiveUnit((current) => ({
+                  ...current,
+                  [row.key]: event.target.value,
+                }))
+              }
+              className={`w-full appearance-none rounded-xl border px-3 py-2 pr-8 text-left text-xs sm:text-sm text-slate-700 shadow-sm outline-none transition focus:ring-2 ${
+                hasError 
+                  ? 'border-red-300 focus:border-red-400 focus:ring-red-100 bg-white' 
+                  : 'border-slate-300 focus:border-blue-300 focus:ring-blue-100 bg-white'
+              }`}
+            >
+              {row.unitOptions.map((unit) => (
+                <option key={unit} value={unit}>
+                  {unit}
+                </option>
+              ))}
+            </select>
+            <span aria-hidden="true" className="pointer-events-none absolute inset-y-0 right-2.5 flex items-center text-slate-500">
+              ▾
+            </span>
+          </label>
+        </div>
 
-                      <button
-                        type="button"
-                        onClick={() => setSelectedHelp(row.key)}
-                        className={`mx-auto flex h-8 w-8 items-center justify-center rounded-full border bg-white text-sm font-semibold shadow-sm transition-colors duration-200 ${
-                          hasError ? 'border-red-300 text-red-600 hover:bg-red-50' : 'border-slate-300 text-slate-600 hover:bg-slate-50'
-                        }`}
-                        aria-label={`${row.label} information`}
-                      >
-                        i
-                      </button>
-                    </div>
-                  )
-                })}
-              </div>
+        {/* Info Button pinned to right column */}
+        <button
+          type="button"
+          onClick={() => setSelectedHelp(row.key)}
+          className={`mx-auto flex h-8 w-8 shrink-0 items-center justify-center rounded-full border bg-white text-sm font-semibold shadow-sm transition-colors duration-200 ${
+            hasError ? 'border-red-300 text-red-600 hover:bg-red-50' : 'border-slate-300 text-slate-600 hover:bg-slate-50'
+          }`}
+          aria-label={`${row.label} information`}
+        >
+          i
+        </button>
+      </div>
+    )
+  })}
+</div>
             </div>
 
             <div className="rounded-3xl p-3">
@@ -869,68 +874,70 @@ export default function CalculatorClient() {
 
               <div className="mt-3 space-y-2 border-t border-slate-200 pt-3">
                 
-                <div className={`grid gap-2 rounded-2xl border p-2.5 shadow-sm sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_32px] sm:items-center transition-colors duration-200 ${
-                  validationErrors.sedimentPhosphorus !== '' 
-                    ? 'border-red-400 bg-red-50/50' 
-                    : 'border-slate-200 bg-white'
-                }`}>
-                  <div className={`rounded-xl px-3 py-2.5 ${validationErrors.sedimentPhosphorus !== '' ? 'bg-red-100/50' : 'bg-slate-50'}`}>
-                    <div className={`text-sm font-semibold leading-tight ${validationErrors.sedimentPhosphorus !== '' ? 'text-red-900' : 'text-slate-900'}`}>{optionalUnitRow.label}</div>
-                  </div>
+                <div className={`grid gap-2 rounded-2xl border p-2.5 shadow-sm sm:grid-cols-[130px_1fr_32px] sm:items-center transition-colors duration-200 ${
+  validationErrors.sedimentPhosphorus !== '' 
+    ? 'border-red-400 bg-red-50/50' 
+    : 'border-slate-200 bg-white'
+}`}>
+  <div className={`rounded-xl px-3 py-2.5 ${validationErrors.sedimentPhosphorus !== '' ? 'bg-red-100/50' : 'bg-slate-50'}`}>
+    <div className={`text-sm font-semibold leading-tight ${validationErrors.sedimentPhosphorus !== '' ? 'text-red-900' : 'text-slate-900'}`}>
+      {optionalUnitRow.label}
+    </div>
+  </div>
 
-                  <div className="flex min-w-0 flex-col gap-2 sm:flex-row">
-                    <input
-                      type={optionalUnitRow.kind}
-                      value={sedimentPhosphorusDraft}
-                      onChange={(event) => {
-                        setValidationErrors(current => ({ ...current, sedimentPhosphorus: '' }))
-                        setSedimentPhosphorusDraft(event.target.value)
-                      }}
-                      placeholder={optionalUnitRow.placeholder}
-                      className={`min-w-0 flex-1 rounded-xl border px-3 py-2 text-center text-slate-800 shadow-sm outline-none transition focus:ring-2 ${
-                        validationErrors.sedimentPhosphorus !== '' 
-                          ? 'border-red-300 focus:border-red-400 focus:ring-red-100 bg-red-50/30' 
-                          : 'border-slate-300 focus:border-blue-300 focus:ring-blue-100 bg-white'
-                      }`}
-                    />
+  <div className="flex min-w-0 flex-1 flex-col gap-2 sm:flex-row">
+    <input
+      type={optionalUnitRow.kind}
+      value={sedimentPhosphorusDraft}
+      onChange={(event) => {
+        setValidationErrors(current => ({ ...current, sedimentPhosphorus: '' }))
+        setSedimentPhosphorusDraft(event.target.value)
+      }}
+      placeholder={optionalUnitRow.placeholder}
+      className={`min-w-0 flex-1 rounded-xl border px-3 py-2 text-center text-slate-800 shadow-sm outline-none transition focus:ring-2 ${
+        validationErrors.sedimentPhosphorus !== '' 
+          ? 'border-red-300 focus:border-red-400 focus:ring-red-100 bg-red-50/30' 
+          : 'border-slate-300 focus:border-blue-300 focus:ring-blue-100 bg-white'
+      }`}
+    />
 
-                    <label className="relative min-w-0 flex-none sm:w-[148px]">
-                      <span className="sr-only">{optionalUnitRow.label} units</span>
-                      <select
-                        value={activeUnit[optionalUnitRow.key]}
-                        onChange={(event) =>
-                          setActiveUnit((current) => ({
-                            ...current,
-                            [optionalUnitRow.key]: event.target.value,
-                          }))
-                        }
-                        className={`w-full appearance-none rounded-xl border px-3 py-2 pr-9 text-left text-sm text-slate-700 shadow-sm outline-none transition focus:ring-2 ${
-                          validationErrors.sedimentPhosphorus !== '' 
-                            ? 'border-red-300 focus:border-red-400 focus:ring-red-100 bg-white' 
-                            : 'border-slate-300 focus:border-blue-300 focus:ring-blue-100 bg-white'
-                        }`}
-                      >
-                        {optionalUnitRow.unitOptions.map((unit) => (
-                          <option key={unit} value={unit}>
-                            {unit}
-                          </option>
-                        ))}
-                      </select>
-                      <span aria-hidden="true" className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-slate-500">
-                        ▾
-                      </span>
-                    </label>
-                  </div>
+    <label className="relative min-w-0 sm:w-36 sm:shrink-0">
+      <span className="sr-only">{optionalUnitRow.label} units</span>
+      <select
+        value={activeUnit[optionalUnitRow.key]}
+        onChange={(event) =>
+          setActiveUnit((current) => ({
+            ...current,
+            [optionalUnitRow.key]: event.target.value,
+          }))
+        }
+        className={`w-full appearance-none rounded-xl border px-3 py-2 pr-8 text-left text-xs sm:text-sm text-slate-700 shadow-sm outline-none transition focus:ring-2 ${
+          validationErrors.sedimentPhosphorus !== '' 
+            ? 'border-red-300 focus:border-red-400 focus:ring-red-100 bg-white' 
+            : 'border-slate-300 focus:border-blue-300 focus:ring-blue-100 bg-white'
+        }`}
+      >
+        {optionalUnitRow.unitOptions.map((unit) => (
+          <option key={unit} value={unit}>
+            {unit}
+          </option>
+        ))}
+      </select>
+      <span aria-hidden="true" className="pointer-events-none absolute inset-y-0 right-2.5 flex items-center text-slate-500">
+        ▾
+      </span>
+    </label>
+  </div>
 
-                  <button
-                    type="button"
-                    onClick={() => setSelectedHelp('sedimentPhosphorus')}
-                    className="mx-auto flex h-8 w-8 items-center justify-center rounded-full border border-slate-300 bg-white text-sm font-semibold text-slate-600 shadow-sm"
-                    aria-label="Sediment phosphorus information"
-                  >
-                    i
-                  </button>
-                </div>
+  <button
+    type="button"
+    onClick={() => setSelectedHelp('sedimentPhosphorus')}
+    className="mx-auto flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-slate-300 bg-white text-sm font-semibold text-slate-600 shadow-sm"
+    aria-label="Sediment phosphorus information"
+  >
+    i
+  </button>
+</div>
 
                 <div className={`flex flex-col gap-2 rounded-2xl border p-2.5 shadow-sm sm:grid-cols-[minmax(0,1fr)_minmax(132px,150px)_32px] sm:items-start transition-colors duration-200 ${
                   validationErrors.secchi !== '' 
