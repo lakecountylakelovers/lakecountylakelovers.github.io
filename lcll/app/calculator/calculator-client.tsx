@@ -688,83 +688,93 @@ export default function CalculatorClient() {
                 </div>
               </div>
 
-              <div className="grid gap-2 rounded-2xl border border-slate-200 bg-white p-2.5 shadow-sm sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_32px] sm:items-center">
-                <div className="rounded-xl bg-slate-50 px-3 py-2">
-                  <div className="text-sm font-semibold leading-tight text-slate-900">Lake</div>
-                </div>
-                
-                <div className="relative block min-w-0">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsDropdownOpen(!isDropdownOpen)
-                      setSelectedHelp('lake')
-                    }}
-                    onFocus={() => setSelectedHelp('lake')}
-                    disabled={loading}
-                    className="flex w-full items-center justify-between rounded-xl border border-slate-300 bg-white px-4 py-2 text-left text-slate-700 shadow-sm outline-none transition focus:border-blue-300 focus:ring-2 focus:ring-blue-100 disabled:opacity-50"
-                  >
-                    <span className="truncate">
-                      {loading ? 'Loading Lakes...' : selectedLake || 'Choose Lake'}
-                    </span>
-                    <span aria-hidden="true" className="text-slate-500 text-s ml-2">
-                      ▾
-                    </span>
-                  </button>
+<div className="grid gap-2 rounded-2xl border border-slate-200 bg-white p-2.5 shadow-sm sm:grid-cols-[130px_1fr_32px] sm:items-center">
+  {/* Column 1: Label */}
+  <div className="rounded-xl bg-slate-50 px-3 py-2">
+    <div className="text-sm font-semibold leading-tight text-slate-900">Lake</div>
+  </div>
+  
+  {/* Column 2: Dropdown Container */}
+  <div className="relative min-w-0 flex-1">
+    <button
+      type="button"
+      onClick={() => setIsDropdownOpen((prev) => !prev)}
+      disabled={loading}
+      className="flex w-full items-center justify-between rounded-xl border border-slate-300 bg-white px-4 py-2 text-left text-slate-700 shadow-sm outline-none transition focus:border-blue-300 focus:ring-2 focus:ring-blue-100 disabled:opacity-50"
+    >
+      <span className="truncate">
+        {loading ? 'Loading Lakes...' : selectedLake || 'Choose Lake'}
+      </span>
+      <span aria-hidden="true" className="ml-2 text-xs text-slate-500">
+        ▾
+      </span>
+    </button>
 
-                  {isDropdownOpen && !loading && (
-                    <>
-                      <div 
-                        className="fixed inset-0 z-10" 
-                        onClick={() => setIsDropdownOpen(false)} 
-                      />
-                      
-                      <ul className="absolute left-0 right-0 top-full z-20 mt-1 max-h-52 overflow-y-auto rounded-xl border border-slate-200 bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5">
-                        <li>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              handleLakeChange('')
-                              setIsDropdownOpen(false)
-                            }}
-                            className="w-full px-4 py-2 text-left text-sm text-slate-500 hover:bg-slate-50 transition"
-                          >
-                            Clear Selection
-                          </button>
-                        </li>
-                        
-                        {lakeOptions.slice(1).map((lake) => (
-                          <li key={lake}>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                handleLakeChange(lake)
-                                setIsDropdownOpen(false)
-                              }}
-                              className={`w-full px-4 py-2 text-left text-sm transition ${
-                                selectedLake === lake 
-                                  ? 'bg-blue-50 font-semibold text-blue-700' 
-                                  : 'text-slate-700 hover:bg-slate-50'
-                              }`}
-                            >
-                              {lake}
-                            </button>
-                          </li>
-                        ))}
-                      </ul>
-                    </>
-                  )}
-                </div>
+    {isDropdownOpen && !loading && (
+      <>
+        {/* Click outside backdrop */}
+        <div 
+          className="fixed inset-0 z-10" 
+          onClick={() => setIsDropdownOpen(false)} 
+        />
+        
+        {/* Dropdown Menu */}
+        <ul className="absolute left-0 right-0 top-full z-20 mt-1 max-h-52 overflow-y-auto rounded-xl border border-slate-200 bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5">
+          <li>
+            <button
+              type="button"
+              onClick={() => {
+                if (typeof handleLakeChange === 'function') {
+                  handleLakeChange('')
+                }
+                setIsDropdownOpen(false)
+              }}
+              className="w-full px-4 py-2 text-left text-sm text-slate-500 transition hover:bg-slate-50"
+            >
+              Clear Selection
+            </button>
+          </li>
+          
+          {(lakeOptions || []).slice(1).map((lake, index) => {
+            const lakeLabel = typeof lake === 'string' ? lake : lake?.name || lake?.label || String(lake)
+            const lakeValue = typeof lake === 'string' ? lake : lake?.value || lake?.id || lakeLabel
 
+            return (
+              <li key={lakeValue || index}>
                 <button
                   type="button"
-                  onClick={() => setSelectedHelp('lake')}
-                  className="mx-auto flex h-8 w-8 items-center justify-center rounded-full border border-slate-300 bg-white text-sm font-semibold text-slate-600 shadow-sm"
-                  aria-label="Lake selector information"
+                  onClick={() => {
+                    if (typeof handleLakeChange === 'function') {
+                      handleLakeChange(lakeValue)
+                    }
+                    setIsDropdownOpen(false)
+                  }}
+                  className={`w-full px-4 py-2 text-left text-sm transition ${
+                    selectedLake === lakeValue 
+                      ? 'bg-blue-50 font-semibold text-blue-700' 
+                      : 'text-slate-700 hover:bg-slate-50'
+                  }`}
                 >
-                  i
+                  {lakeLabel}
                 </button>
-              </div>
+              </li>
+            )
+          })}
+        </ul>
+      </>
+    )}
+  </div>
+
+  {/* Column 3: Info Button */}
+  <button
+    type="button"
+    onClick={() => setSelectedHelp('lake')}
+    className="mx-auto flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-slate-300 bg-white text-sm font-semibold text-slate-600 shadow-sm transition-colors duration-200 hover:bg-slate-50"
+    aria-label="Lake information"
+  >
+    i
+  </button>
+</div>
 
 <div className="mt-3 grid gap-4 sm:grid-rows-2">
   {inputRows.map((row) => {
