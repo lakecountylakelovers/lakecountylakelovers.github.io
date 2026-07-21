@@ -43,7 +43,7 @@ const helpCopy: Record<HelpKey, { title: string; description: string; note: stri
     note: 'Required input',
   },
   sedimentPhosphorus: {
-    title: 'Total Phosphorous (Lake Sediment)',
+    title: 'Total Phosphorous (Sediment)',
     description:
       'Enter the total phosphorus concentration in the sediment. Typically, you would receive this value from a professional sediment phosphorus fractionation test. If you do not have this value, you can leave it blank, and the calculator will use alternative methods.',
     note: 'Optional input',
@@ -782,7 +782,7 @@ export default function CalculatorClient() {
                         <div className={`text-sm font-semibold leading-tight ${hasError ? 'text-red-900' : 'text-slate-900'}`}>{row.label}</div>
                       </div>
 
-                      <div className="flex min-w-30 flex-col gap-2 sm:flex-row">
+                      <div className="flex min-w-[250px] flex-col gap-2 sm:flex-row">
                         <input
                           type={row.kind}
                           value={
@@ -818,7 +818,7 @@ export default function CalculatorClient() {
                           }`}
                         />
 
-                        <label className="relative min-w-0 flex-none sm:w-[148px]">
+                        <label className="relative flex-none sm:w-[148px]">
                           <span className="sr-only">{row.label} units</span>
                           <select
                             value={activeUnit[row.key]}
