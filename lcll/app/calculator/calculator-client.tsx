@@ -43,7 +43,7 @@ const helpCopy: Record<HelpKey, { title: string; description: string; note: stri
     note: 'Required input',
   },
   sedimentPhosphorus: {
-    title: 'TP of Sed',
+    title: 'Total Phosphorous (Lake Sediment)',
     description:
       'Enter the total phosphorus concentration in the sediment. Typically, you would receive this value from a professional sediment phosphorus fractionation test. If you do not have this value, you can leave it blank, and the calculator will use alternative methods.',
     note: 'Optional input',
@@ -88,13 +88,13 @@ const inputRows = [
 
 const optionalUnitRow = {
   key: 'sedimentPhosphorus' as const,
-  label: 'TP of Sed',
+  label: 'Total Phosphorus (Lake Sediment)',
   placeholder: '',
   kind: 'number',
   unitOptions: ['mg/kg as P', 'mg/g as P', 'mg/kg as PO4', 'mg/g as PO4'],
 }
 
-const secchiUnitOptions = ['ft', 'm']
+const secchiUnitOptions = ['ft', 'm', 'in']
 
 type CalculationDraft = {
   surfaceArea?: string
@@ -164,6 +164,7 @@ const convertSecchiToM = (value: number, unit: string) => {
   switch (unit) {
     case 'm': return value
     case 'ft': return value * 0.3048
+    case 'in': return value * (1.0 / 12.0) * 0.3048
     default: return null
   }
 }
@@ -259,7 +260,7 @@ export default function CalculatorClient() {
     meanDepth: 'ft',
     lakePhosphorus: 'mg/L as P',
     sedimentPhosphorus: 'mg/kg as P',
-    secchi: 'ft',
+    secchi: 'in',
   })
   
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({
@@ -459,7 +460,7 @@ export default function CalculatorClient() {
 
   if (view === 'results' && results) {
     return (
-      <main className="mx-auto w-full max-w-7xl px-3 py-2 sm:px-4 sm:py-3 lg:px-6">
+      <main className="mx-auto w-full px-3 py-2 sm:px-4 sm:py-3 lg:px-6">
         <section className="w-full flex flex-col gap-5 overflow-hidden rounded-[1.5rem] border border-white/70 bg-white/90 p-4 shadow-[0_24px_80px_rgba(23,38,58,0.16)] backdrop-blur-md">
           
           <header className="border-b border-slate-200 pb-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
@@ -781,7 +782,7 @@ export default function CalculatorClient() {
                         <div className={`text-sm font-semibold leading-tight ${hasError ? 'text-red-900' : 'text-slate-900'}`}>{row.label}</div>
                       </div>
 
-                      <div className="flex min-w-0 flex-col gap-2 sm:flex-row">
+                      <div className="flex min-w-30 flex-col gap-2 sm:flex-row">
                         <input
                           type={row.kind}
                           value={
