@@ -513,7 +513,7 @@ export default function CalculatorClient() {
   if (view === 'results' && results) {
     return (
       <main className="mx-auto w-full px-3 py-2 sm:px-4 sm:py-3 lg:px-6">
-        <section className="w-full flex flex-col gap-5 overflow-hidden rounded-[1.5rem] border border-white/70 bg-white/90 p-4 shadow-[0_24px_80px_rgba(23,38,58,0.16)] backdrop-blur-md">
+        <section className="w-full flex flex-col gap-5 overflow-hidden rounded-[1.5rem] border border-white/70 bg-white/90 p-4 backdrop-blur-md">
           
           <header className="border-b border-slate-200 pb-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
             <div>
@@ -681,7 +681,7 @@ export default function CalculatorClient() {
 
   return (
     <main className="mx-auto w-full max-w-7xl px-3 py-2 sm:px-4 sm:py-3 lg:px-6">
-      <section className="w-full flex flex-col gap-3 overflow-hidden rounded-[1.5rem] border border-white/70 bg-white/90 p-3 shadow-[0_24px_80px_rgba(23,38,58,0.16)] backdrop-blur-md md:grid-cols-[minmax(0,1.08fr)_minmax(300px,0.92fr)] lg:p-4">
+      <section className="w-full flex flex-col gap-3 overflow-hidden rounded-[1.5rem] border border-white/70 bg-white/90 p-3 backdrop-blur-md md:grid-cols-[minmax(0,1.08fr)_minmax(300px,0.92fr)] lg:p-4">
         <header className="border-b border-slate-200 px-4 py-3">
           <div className="flex items-center justify-center gap-2 text-center">
             <h1 className="text-lg font-bold leading-tight text-slate-900 sm:text-xl">
