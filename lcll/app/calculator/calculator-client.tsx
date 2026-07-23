@@ -54,7 +54,7 @@ const helpCopy: Record<HelpKey, { title: string; description: string; note: stri
   secchi: {
     title: 'Secchi depth measurements',
     description:
-      'Enter secchi depth measurements available for your lake. Enter single values or comma-separated numbers (e.g. 5.2, 6.1, 4.8) and click the add button to add each measurement. Try to add measurements from over the course of the season to get a more accurate average. You can add up to 12 measurements.',
+      'Enter secchi depth measurements available for your lake, from the google earth data, embedded below this calculator. Enter single values or comma-separated numbers (e.g. 5.2, 6.1, 4.8) and click the add button to add each measurement. Try to add measurements from over the course of the season to get a more accurate average. You can add up to 12 measurements.',
     note: 'Optional input, Multiple entries allowed (Max 12 readings)',
   },
 }
