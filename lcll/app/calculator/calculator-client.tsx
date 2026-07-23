@@ -1,7 +1,7 @@
 "use client"
 
 import Link from 'next/link'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 
 type HelpKey = 'overview' | 'lake' | 'surfaceArea' | 'meanDepth' | 'lakePhosphorus' | 'sedimentPhosphorus' | 'secchi'
 type UnitKey = 'surfaceArea' | 'meanDepth' | 'lakePhosphorus' | 'sedimentPhosphorus' | 'secchi'
@@ -10,48 +10,51 @@ interface LakeDetails {
   surfaceArea: number
   meanDepth: number
   lakePhosphorus: number
+  sedimentPhosphorus?: number
+  dataYear?: number
+  [key: string]: any
 }
 
 const helpCopy: Record<HelpKey, { title: string; description: string; note: string }> = {
   overview: {
     title: 'How to use this calculator',
     description:
-      'In order to use this calculator, you will need information about your lakes, including surface area, mean depth, and the total phosphorus measurements in your water column. If you are in LCLL, select your lake from the dropdown, and surface area/mean depth will be available by default. For more information about obtaining each measurement please select the information button to the right of that variable. You do not need to do unit conversions, because there are multiple units you can choose from below.',
+      'In order to use this calculator, you will need information about your lakes, including surface area, average depth, and total phosphorus measurements. If you select your lake from the dropdown, values will pre-fill automatically. Units can be adjusted via unit options next to each input.',
     note: 'General Instructions',
   },
   lake: {
     title: 'Choose a lake',
     description:
-      'Use the dropdown to select a lake. With a recognized lake, the calculator can prefill known values such as surface area and mean depth. If your lake is not listed, you can leave the dropdown blank, and you will have to manually enter your lake\'s surface area and mean depth.',
+      'Use the dropdown to select a lake. With a recognized lake, the calculator can prefill known values such as surface area and average depth. If your lake is not listed, leave blank and manually enter your lake\'s metrics.',
     note: 'Dropdown control',
   },
   surfaceArea: {
     title: 'Surface area',
-    description: `Enter the surface area of your lake. If you already selected a lake from the dropdown, this field has been filled automatically. In Lake County, you can find the most recent measurements for your lake, performed by the Health Department, here: `,
+    description: `Enter the surface area of your lake. If you selected a lake from the dropdown, this field has been filled automatically. In Lake County, find recent Health Department measurements here: `,
     note: 'Required input',
   },
   meanDepth: {
-    title: 'Mean depth',
+    title: 'Average depth',
     description:
-      'Enter the mean, or average, depth of your lake. If you already selected a lake from the dropdown, this field has been filled automatically. In Lake County, you can find the most recent measurements for your lake, performed by the Health Department, here: ',
+      'Enter the mean, or average, depth of your lake. If you selected a lake from the dropdown, this field has been filled automatically. In Lake County, find recent Health Department measurements here: ',
     note: 'Required input',
   },
   lakePhosphorus: {
     title: 'Total phosphorus in the lake water',
     description:
-      'Enter the annual average total phosphorus concentration in the water column. If you already selected a lake from the dropdown, this field has been filled automatically. However, be extra cautious, as total phosphorus concentration changes over time, and the data may be as old as 10 years. In Lake County, you can find the most recent measurements for your lake, performed by the Health Department, here: ',
+      'This measures the total phosphorus concentration 3 feet below the water surface. If selected from the dropdown, this pre-fills automatically. However, total phosphorus concentration in the water column changes over the years, and beware that the lake report data can be a decade old. If you have a more recent measurement of Total Phosphorus, use that. Otherwise, in Lake County, you can find the most recently available reports here: ',
     note: 'Required input',
   },
   sedimentPhosphorus: {
     title: 'Total Phosphorous (Sediment)',
     description:
-      'Enter the total phosphorus concentration in the sediment. Typically, you would receive this value from a professional sediment phosphorus fractionation test. If you do not have this value, you can leave it blank, and the calculator will use alternative methods.',
+      'Enter the total phosphorus in the lake\'s sediment. This is typically received from a professional sediment fractionation test. If unavailable, leave this blank and use alternative estimation methods.',
     note: 'Optional input',
   },
   secchi: {
     title: 'Secchi depth measurements',
     description:
-      'Enter the secchi depth measurements available for your lake. You can enter multiple measurements for an annual overview of the water clarity and the calculator will average these measurements for you. Once you enter the secchi depth, click the "Add" button to add it to the list of measurements. Note: You can add up to 12 total readings.',
+      'Enter secchi depth measurements available for your lake. Enter single values or comma-separated numbers (e.g. 5.2, 6.1, 4.8) and click the add button to add each measurement. Try to add measurements from over the course of the season to get a more accurate average. You can add up to 12 measurements.',
     note: 'Optional input, Multiple entries allowed (Max 12 readings)',
   },
 }
@@ -66,7 +69,7 @@ const inputRows = [
   },
   {
     key: 'meanDepth' as const,
-    label: 'Mean Depth',
+    label: 'Average Depth',
     placeholder: '',
     kind: 'number',
     unitOptions: ['ft', 'm'],
@@ -225,6 +228,7 @@ type ViewState = 'input' | 'results'
 interface CalculationResults {
   inputs: {
     lake: string
+    dataYear: string
     surfaceArea: string
     surfaceAreaUnit: string
     meanDepth: string
@@ -244,11 +248,30 @@ interface CalculationResults {
 export default function CalculatorClient() {
   const [lakeData, setLakeData] = useState<Record<string, LakeDetails>>({})
   type LakeOption = string | { id?: string; value?: string; name?: string; label?: string };
-  const [lakeOptions, setLakeOptions] = useState<LakeOption[]>([]);
+  const [lakeOptions, setLakeOptions] = useState<LakeOption[]>([])
   const [loading, setLoading] = useState(true)
 
-  const [selectedHelp, setSelectedHelp] = useState<HelpKey>('overview')
+  const [activeInlineTooltip, setActiveInlineTooltip] = useState<HelpKey | null>(null)
+  const hoverTimerRef = useRef<NodeJS.Timeout | null>(null)
+
+  const handleMouseEnter = (key: HelpKey) => {
+    if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current)
+    hoverTimerRef.current = setTimeout(() => {
+      setActiveInlineTooltip(key)
+    }, 200)
+  }
+
+  const handleMouseLeave = () => {
+    if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current)
+    hoverTimerRef.current = setTimeout(() => {
+      setActiveInlineTooltip(null)
+    }, 200)
+  }
+  
   const [selectedLake, setSelectedLake] = useState('')
+  const [isPrefilled, setIsPrefilled] = useState(false)
+  const [dataYear, setDataYear] = useState<string>('')
+
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
   const [surfaceAreaDraft, setSurfaceAreaDraft] = useState('')
   const [meanDepthDraft, setMeanDepthDraft] = useState('')
@@ -274,7 +297,7 @@ export default function CalculatorClient() {
 
   const [view, setView] = useState<ViewState>('input')
   const [results, setResults] = useState<CalculationResults | null>(null)
-  const [reportYear, setReportYear] = useState(new Date().getFullYear().toString())
+  const [reportDate, setReportDate] = useState(() => new Date().toISOString().split('T')[0])
 
   useEffect(() => {
     async function fetchLakes() {
@@ -296,17 +319,20 @@ export default function CalculatorClient() {
     fetchLakes()
   }, [])
 
-  const selectedHelpContent = helpCopy[selectedHelp]
   const canAddSecchi = secchiDraft.trim().length > 0
 
   const handleLakeChange = (lakeName: string) => {
     setSelectedLake(lakeName)
     
-    if (lakeName && lakeData[lakeName]) {
-      const data = lakeData[lakeName]
-      setSurfaceAreaDraft(data.surfaceArea.toString())
-      setMeanDepthDraft(data.meanDepth.toString())
-      setLakePhosphorusDraft(data.lakePhosphorus.toString())
+    const data = lakeData[lakeName]
+    
+    if (lakeName && data) {
+      if (data.surfaceArea != null) setSurfaceAreaDraft(data.surfaceArea.toString())
+      if (data.meanDepth != null) setMeanDepthDraft(data.meanDepth.toString())
+      if (data.lakePhosphorus != null) setLakePhosphorusDraft(data.lakePhosphorus.toString())
+      if (data.sedimentPhosphorus != null) setSedimentPhosphorusDraft(data.sedimentPhosphorus.toString())
+      if (data.dataYear != null) setDataYear(data.dataYear.toString())
+      setIsPrefilled(true)
       
       setActiveUnit((current) => ({
         ...current,
@@ -322,6 +348,9 @@ export default function CalculatorClient() {
         sedimentPhosphorus: '',
         secchi: '',
       })
+    } else {
+      setIsPrefilled(false)
+      setDataYear('')
     }
   }
 
@@ -341,31 +370,30 @@ export default function CalculatorClient() {
 
     if (saValue == null) {
       errors.surfaceArea = 'Surface area is required.'
-    } else if (saValue < 0) {
-      errors.surfaceArea = 'Value cannot be negative.'
+    } else if (saValue <= 0) {
+      errors.surfaceArea = 'Value must be greater than 0.'
     }
 
     if (mdValue == null) {
-      errors.meanDepth = 'Mean depth is required.'
-    } else if (mdValue < 0) {
-      errors.meanDepth = 'Value cannot be negative.'
+      errors.meanDepth = 'Average depth is required.'
+    } else if (mdValue <= 0) {
+      errors.meanDepth = 'Value must be greater than 0.'
     }
 
     if (lpValue == null) {
       errors.lakePhosphorus = 'Total Phosphorus is required.'
-    } else if (lpValue < 0) {
-      errors.lakePhosphorus = 'Value cannot be negative.'
+    } else if (lpValue <= 0) {
+      errors.lakePhosphorus = 'Value must be greater than 0.'
     }
 
-    if (sedValue != null && sedValue < 0) {
-      errors.sedimentPhosphorus = 'Value cannot be negative.'
+    if (sedValue != null && sedValue <= 0) {
+      errors.sedimentPhosphorus = 'Value must be greater than 0.'
     }
 
     setValidationErrors(errors)
 
     const hasAnyError = Object.values(errors).some(msg => msg !== '')
     if (hasAnyError) {
-      setSelectedHelp('overview')
       return
     }
 
@@ -393,6 +421,7 @@ export default function CalculatorClient() {
     setResults({
       inputs: {
         lake: selectedLake || 'Custom/Unlisted Lake',
+        dataYear: dataYear,
         surfaceArea: surfaceAreaDraft,
         surfaceAreaUnit: activeUnit.surfaceArea,
         meanDepth: meanDepthDraft,
@@ -410,45 +439,48 @@ export default function CalculatorClient() {
     })
 
     setView('results')
+    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   const addSecchiMeasurement = () => {
-    const valueStr = secchiDraft.trim()
-    if (!valueStr) return
+    const rawInput = secchiDraft.trim()
+    if (!rawInput) return
 
-    const valNum = Number(valueStr)
-    if (isNaN(valNum)) {
-      setValidationErrors(prev => ({ ...prev, secchi: 'Please enter a valid number.' }))
-      setSelectedHelp('secchi')
+    const tokens = rawInput.split(/[\s,]+/).filter(Boolean)
+    const newEntries: SecchiEntry[] = []
+    let hasInvalid = false
+
+    for (const token of tokens) {
+      const valNum = Number(token)
+      if (isNaN(valNum) || valNum <= 0) {
+        hasInvalid = true;
+        break;
+      }
+      if (secchiEntries.length + newEntries.length >= 12) {
+        setValidationErrors(prev => ({ ...prev, secchi: 'Cannot exceed a total of 12 Secchi measurements.' }))
+        break;
+      }
+      newEntries.push({ id: crypto.randomUUID(), value: token })
+    }
+
+    if (hasInvalid) {
+      setValidationErrors(prev => ({ ...prev, secchi: 'Please enter valid positive numbers greater than 0 separated by commas.' }))
       return
     }
 
-    if (valNum < 0) {
-      setValidationErrors(prev => ({ ...prev, secchi: 'Value cannot be negative.' }))
-      setSelectedHelp('secchi')
-      return
+    if (newEntries.length > 0) {
+      setValidationErrors(prev => ({ ...prev, secchi: '' }))
+      setSecchiEntries((current) => [...current, ...newEntries])
+      setSecchiDraft('')
     }
-
-    if (secchiEntries.length >= 12) {
-      setValidationErrors(prev => ({ ...prev, secchi: 'You cannot exceed a total of 12 Secchi measurements.' }))
-      setSelectedHelp('secchi')
-      return
-    }
-
-    setValidationErrors(prev => ({ ...prev, secchi: '' }))
-    setSecchiEntries((current) => [...current, { id: crypto.randomUUID(), value: valueStr }])
-    setSecchiDraft('')
-    setSelectedHelp('secchi')
   }
 
   const removeSecchiMeasurement = (entryIdToRemove: string) => {
     const updatedEntries = secchiEntries.filter((entry) => entry.id !== entryIdToRemove)
     setSecchiEntries(updatedEntries)
-    
     if (updatedEntries.length < 12) {
       setValidationErrors(prev => ({ ...prev, secchi: '' }))
     }
-    setSelectedHelp('secchi')
   }
 
   const downloadPdfReport = () => {
@@ -459,6 +491,25 @@ export default function CalculatorClient() {
     .filter(([_, msg]) => msg !== '')
     .map(([key, msg]) => ({ key, msg }))
 
+  const renderTooltipCard = (key: HelpKey) => {
+    if (activeInlineTooltip !== key) return null
+    const content = helpCopy[key]
+    return (
+      <div className="mt-2 rounded-xl border border-blue-200 bg-blue-50/90 p-3 text-xs text-slate-800 shadow-sm animate-fadeIn">
+        <div className="font-bold text-blue-900 mb-1">{content.title}</div>
+        <div>
+          {content.description}
+          {(key === 'surfaceArea' || key === 'meanDepth' || key === 'lakePhosphorus') && (
+            <Link href="https://www.lakecountyil.gov/2400/Lake-Reports" target="_blank" className="text-blue-700 font-semibold underline ml-1">
+              Lake Reports
+            </Link>
+          )}
+        </div>
+        <div className="mt-1 text-[10px] font-bold uppercase tracking-wider text-blue-600">{content.note}</div>
+      </div>
+    )
+  }
+
   if (view === 'results' && results) {
     return (
       <main className="mx-auto w-full px-3 py-2 sm:px-4 sm:py-3 lg:px-6">
@@ -466,33 +517,36 @@ export default function CalculatorClient() {
           
           <header className="border-b border-slate-200 pb-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
             <div>
-              <h1 className="text-xl font-semibold text-slate-900">
+              <h1 className="text-xl font-bold text-slate-900">
                 Phosphorus Loading Results: {results.inputs.lake ? results.inputs.lake : 'Unlisted Lake'}
               </h1>
             </div>
             
             <div className="flex flex-wrap items-center gap-3">
               <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
-                Year:
+                Report Date:
                 <input 
-                  type="number" 
-                  value={reportYear}
-                  onChange={(e) => setReportYear(e.target.value)}
-                  className="w-20 rounded-xl border border-slate-300 px-2 py-1.5 text-center font-bold text-slate-800 outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
+                  type="date" 
+                  value={reportDate}
+                  onChange={(e) => setReportDate(e.target.value)}
+                  className="rounded-xl border border-slate-300 px-3 py-1.5 font-semibold text-slate-800 outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
                 />
               </label>
 
               <button
                 type="button"
                 onClick={downloadPdfReport}
-                className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50 print:hidden"
+                className="rounded-xl border border-blue-600 bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 print:hidden"
               >
                 Download PDF Report
               </button>
               
               <button
                 type="button"
-                onClick={() => setView('input')}
+                onClick={() => {
+                  setView('input')
+                  window.scrollTo({ top: 0, behavior: 'smooth' })
+                }}
                 className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50 print:hidden"
               >
                 Edit Inputs
@@ -501,8 +555,12 @@ export default function CalculatorClient() {
           </header>
 
           <div className="bg-slate-50/50 p-4 rounded-xl border border-slate-100">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Your Inputs</h3>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-900 mb-2">Your Inputs</h3>
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
+              <div>
+                <span className="block text-xs text-slate-500">Lake County Health Data Year</span>
+                <strong className="text-slate-800">{results.inputs.dataYear == '' ? 'N/A' : results.inputs.dataYear}</strong>
+              </div>
               <div>
                 <span className="block text-xs text-slate-500">Surface Area</span>
                 <strong className="text-slate-800">{results.inputs.surfaceArea} {results.inputs.surfaceAreaUnit}</strong>
@@ -521,6 +579,14 @@ export default function CalculatorClient() {
                   {results.inputs.sedimentPhosphorus ? `${results.inputs.sedimentPhosphorus} ${results.inputs.sedimentPhosphorusUnit}` : 'Skipped'}
                 </strong>
               </div>
+              {results.inputs.secchiEntries.length == 0 && (
+              <div className="mt-3 pt-3 border-t border-slate-200/60 text-sm">
+                <span className="block text-xs text-slate-500 mb-1">Secchi Readings</span>
+                <strong className="text-slate-800">
+                  Skipped
+                </strong>
+              </div>
+              )}
             </div>
 
             {results.inputs.secchiEntries.length > 0 && (
@@ -542,20 +608,24 @@ export default function CalculatorClient() {
               <div>
                 <h4 className="text-sm font-bold uppercase tracking-wider text-rose-800">1. Internal Loading</h4>
                 <p className="text-xs text-slate-600 mt-1">
-                  Calculations provide estimates of internal phosphorus loading using alternative configurations. The secchi model provides highly reliable calibrations.
+                  The result labeled Est. Internal Phosphorus Loading is the 
+                  most reliable estimate. <strong>Treat all of the measurements 
+                  as a range of possible values</strong> rather than believing in a single precise 
+                  value. <strong>The Total Phosphorus model must be used with caution</strong>, since if the data was 
+                  from an old lake report, it is representative of an older condition of the lake.
                 </p>
                 <div className="mt-4 space-y-2">
                   <div className="flex justify-between items-center border-b border-dashed border-rose-200/50 pb-1.5">
-                    <span className="text-xs text-slate-700">Lake TP Model:</span>
-                    <strong className="text-sm font-mono text-slate-900">{results.internalLake ? `${Number(results.internalLake).toFixed(0)} lbs/yr` : '—'}</strong>
+                    <span className="text-xs text-slate-700">Sediment Model:</span>
+                    <strong className="text-sm font-mono text-slate-900">{results.internalSed ? `${Number(results.internalSed).toFixed(0)} lbs/yr` : '—'}</strong>
                   </div>
                   <div className="flex justify-between items-center border-b border-dashed border-rose-200/50 pb-1.5">
                     <span className="text-xs text-slate-700">Secchi Model:</span>
                     <strong className="text-sm font-mono text-slate-900">{results.internalSecchi ? `${Number(results.internalSecchi).toFixed(0)} lbs/yr` : '—'}</strong>
                   </div>
-                  <div className="flex justify-between items-center pb-1">
-                    <span className="text-xs text-slate-700">Sediment Model:</span>
-                    <strong className="text-sm font-mono text-slate-900">{results.internalSed ? `${Number(results.internalSed).toFixed(0)} lbs/yr` : '—'}</strong>
+                  <div className="flex justify-between items-center pb-1.5">
+                    <span className="text-xs text-slate-700">Lake TP Model:</span>
+                    <strong className="text-sm font-mono text-slate-900">{results.internalLake ? `${Number(results.internalLake).toFixed(0)} lbs/yr` : '—'}</strong>
                   </div>
                 </div>
               </div>
@@ -567,26 +637,18 @@ export default function CalculatorClient() {
             <div className="flex flex-col justify-between rounded-2xl bg-sky-50/50 p-5 shadow-sm border border-sky-100">
               <div>
                 <h4 className="text-sm font-bold uppercase tracking-wider text-sky-800">2. External Loading</h4>
-                <p className="text-xs text-slate-600 mt-1">Estimates regional watershed runoffs and secondary inflows alongside system calculations.</p>
-                <div className="mt-6 flex flex-col items-center justify-center rounded-xl border border-dashed border-sky-300 bg-white/60 p-4">
-                  <span className="text-xs font-bold text-sky-700 uppercase">Placeholder Target</span>
-                </div>
               </div>
               <div className="mt-4 bg-sky-100 border border-sky-300 rounded-xl p-2.5 text-center text-sky-800 text-xs font-semibold">
-                External Models: Pending
+                Placeholder
               </div>
             </div>
             
             <div className="flex flex-col justify-between rounded-2xl bg-emerald-50/50 p-5 shadow-sm border border-emerald-100">
               <div>
                 <h4 className="text-sm font-bold uppercase tracking-wider text-emerald-800">3. Algal Blooms</h4>
-                <p className="text-xs text-slate-600 mt-1">Calculates potential bloom frequencies and risk thresholds based on stagnant conditions.</p>
-                <div className="mt-6 flex flex-col items-center justify-center rounded-xl border border-dashed border-emerald-300 bg-white/60 p-4">
-                  <span className="text-xs font-bold text-emerald-700 uppercase">Placeholder Target</span>
-                </div>
               </div>
               <div className="mt-4 bg-emerald-100 border border-emerald-300 rounded-xl p-2.5 text-center text-emerald-800 text-xs font-semibold">
-                Bloom Risk Rate: Pending
+                Placeholder
               </div>
             </div>
           </div>
@@ -595,19 +657,19 @@ export default function CalculatorClient() {
             <div className="p-1">
               <span className="block font-bold text-slate-700 uppercase tracking-wide mb-1.5">Disclaimer & Modeling Limitations</span>
               <p className="leading-relaxed text-xs">
-                The output is just an estimate of the phosphorus load based on published formulas from Gertrud Nernberg's book and extensive research on lakes in Northern America. This estimate provides an in-the-ballpark value helpful for treatment decisions rather than a precise one. It is not equivalent to site-specific data produced by certified environmental professionals.
+                The output is just an estimate of the phosphorus load based on published formulas from Gertrud Nernberg's book Lake Functioningand extensive research on lakes in Northern America. This estimate provides an in-the-ballpark value helpful for treatment decisions rather than a precise one. It is not equivalent to site-specific data produced by certified environmental professionals.
               </p>
             </div>
             <div className="p-1">
               <span className="block font-bold text-slate-700 uppercase tracking-wide mb-1.5">Academic Literature Framework</span>
               <p className="leading-relaxed text-xs">
-                The major formulas utilized come from Gertrud Nurnberg's authoritative volume <em>Lake Functioning</em>, as well as peer-reviewed research papers authored by Gertrud Nurnberg, Lindsey D. Carter, and Andrew R. Dzialowski published in reputable Freshwater Science Journals. See detailed references in the background section.
+              The major formulas utilized come from Gertrud Nurnberg's authoritative volume Lake Functioning, as well as peer-reviewed research papers authored by Gertrud Nurnberg, Lindsey D. Carter, and Andrew R. Dzialowski published in reputable Freshwater Science Journals. See detailed references in the background section.
               </p>
             </div>
             <div className="p-1">
               <span className="block font-bold text-slate-700 uppercase tracking-wide mb-1.5">Scientific Advisory Board</span>
               <p className="leading-relaxed text-xs">
-                Developed under the technical advisement of <strong>Paul Spiewak</strong> (former analytical chemist & science enthusiast), <strong>Allen Melcer</strong> (former environmental manager at the US Environmental Protection Agency), and <strong>James Bland</strong> (former contributor to freshwater ecosystems at the Shedd Aquarium and environmental sciences professor). Project management was coordinated by <strong>Becky Sawle</strong> (former AbbVie Innovation Projects Lead).
+              Developed under the technical advisement of Paul Spiewak (former analytical chemist & science enthusiast), Allen Melcer (former environmental manager at the US Environmental Protection Agency), and James Bland (former contributor to freshwater ecosystems at the Shedd Aquarium and environmental sciences professor). Project management was coordinated by Becky Sawle (former AbbVie Innovation Projects Lead).
               </p>
             </div>
           </footer>
@@ -620,450 +682,343 @@ export default function CalculatorClient() {
   return (
     <main className="mx-auto w-full max-w-7xl px-3 py-2 sm:px-4 sm:py-3 lg:px-6">
       <section className="w-full flex flex-col gap-3 overflow-hidden rounded-[1.5rem] border border-white/70 bg-white/90 p-3 shadow-[0_24px_80px_rgba(23,38,58,0.16)] backdrop-blur-md md:grid-cols-[minmax(0,1.08fr)_minmax(300px,0.92fr)] lg:p-4">
-        <header className="border-b border-slate-200 rounded-2xl px-4 py-3">
-            <div className="flex items-center justify-center gap-2 text-center">
-              <h1 className="mt-1 text-lg font-semibold leading-tight text-slate-900 sm:text-xl">
-                Lake County Lake Lovers' Phosphorus Loading Calculator
-              </h1>
-              <button
-                type="button"
-                onClick={() => {
-                  setValidationErrors({
-                    surfaceArea: '',
-                    meanDepth: '',
-                    lakePhosphorus: '',
-                    sedimentPhosphorus: '',
-                    secchi: '',
-                  })
-                  setSelectedHelp('overview')
-                }}
-                className="mt-1 flex h-8 w-8 items-center justify-center rounded-full border border-slate-300 bg-white text-sm font-semibold text-slate-600 shadow-sm transition hover:bg-blue-50"
-                aria-label="Calculator instructions"
-              >
-                i
-              </button>
-            </div>
-        </header>
-        
-        <div className="rounded-3xl p-3">
-            <div className="text-sm font-semibold uppercase tracking-[0.22em] text-slate-500">
-              Active Help & Diagnostics
-            </div>
-
-            <div className="mt-1.5 text-base font-semibold text-slate-900">
-              {selectedHelpContent.title}
-            </div>
-            <div className="mt-1.5 text-sm leading-5 text-slate-700">
-              <span>{selectedHelpContent.description}</span>
-              {(selectedHelpContent.title === 'Surface area' || 
-                selectedHelpContent.title === 'Mean depth' || 
-                selectedHelpContent.title === 'Total phosphorus in the lake water') && (
-                <Link href="https://www.lakecountyil.gov/2400/Lake-Reports" target="_blank" className="text-blue-600 hover:underline ml-1">
-                  Lake Reports
-                </Link>
-              )}
-            </div>
-            <div className="mt-2 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-              {selectedHelpContent.note}
-            </div>
-
-            {activeErrorsList.length > 0 ? (
-              <div className="my-3 p-3 bg-red-50 border border-red-200 rounded-2xl text-red-700">
-                <ul className="list-none list-inside space-y-1 text-xs">
-                  {activeErrorsList.map(({ key, msg }) => (
-                    <li key={key}>
-                      <strong>{msg}</strong>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ) : null}
+        <header className="border-b border-slate-200 px-4 py-3">
+          <div className="flex items-center justify-center gap-2 text-center">
+            <h1 className="text-lg font-bold leading-tight text-slate-900 sm:text-xl">
+              Lake County Lake Lovers' Phosphorus Loading Calculator
+            </h1>
           </div>
+        </header>
+
+        {/* Global Guidance Notice */}
+        <div className="rounded-2xl p-3 text-xs text-black-900">
+          <p className="font-semibold">Important Guidelines:</p>
+          <ul className="mt-1 list-none list-inside space-y-0.5 text-slate-900">
+            <li>Multiple units are supported for each input. <strong>Select your preferred unit using the dropdown</strong> next to each field.</li>
+            <li>Especially be careful about the distinction between <strong>Phosphorus & Phosphate</strong></li>
+            <li>Ensure all entered data inputs are collected from the <strong>same calendar year</strong> for consistency, but <strong>Total Phosphorus is an exception to this rule</strong></li>
+          </ul>
+        </div>
+
+        {/* Active Errors List */}
+        {activeErrorsList.length > 0 && (
+          <div className="p-3 bg-red-50 border border-red-200 rounded-2xl text-red-700">
+            <ul className="list-none space-y-1 text-xs">
+              {activeErrorsList.map(({ key, msg }) => (
+                <li key={key}>
+                  <strong>{msg}</strong>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
 
         <div className="flex min-h-0 flex-row overflow-hidden">
-          <div className="grid min-h-0 flex-1 gap-3 overflow-hidden md:grid-cols-2">
-            <div className="rounded-3xl p-3">
-              <div className="mb-3 flex text-center justify-between border-b border-slate-200 pb-2.5">
-                <div className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">
-                  Required Inputs
-                </div>
+          <div className="grid min-h-0 flex-1 gap-4 overflow-hidden md:grid-cols-2">
+            
+            {/* REQUIRED INPUTS SECTION */}
+            <div>
+              <div className="mb-4 border-b-2 border-blue-600 pb-2">
+                <h2 className="text-base font-extrabold uppercase tracking-wider text-blue-950">
+                  1. Required Inputs
+                </h2>
               </div>
 
-<div className="grid gap-2 rounded-2xl border border-slate-200 bg-white p-2.5 shadow-sm sm:grid-cols-[130px_1fr_32px] sm:items-center">
-  {/* Column 1: Label */}
-  <div className="rounded-xl bg-slate-50 px-3 py-2">
-    <div className="text-sm font-semibold leading-tight text-slate-900">Lake</div>
-  </div>
-  
-  {/* Column 2: Dropdown Container */}
-  <div className="relative min-w-0 flex-1">
-    <button
-      type="button"
-      onClick={() => setIsDropdownOpen((prev) => !prev)}
-      disabled={loading}
-      className="flex w-full items-center justify-between rounded-xl border border-slate-300 bg-white px-4 py-2 text-left text-slate-700 shadow-sm outline-none transition focus:border-blue-300 focus:ring-2 focus:ring-blue-100 disabled:opacity-50"
-    >
-      <span className="truncate">
-        {loading ? 'Loading Lakes...' : selectedLake || 'Choose Lake'}
-      </span>
-      <span aria-hidden="true" className="ml-2 text-xs text-slate-500">
-        ▾
-      </span>
-    </button>
-
-    {isDropdownOpen && !loading && (
-      <>
-        {/* Click outside backdrop */}
-        <div 
-          className="fixed inset-0 z-10" 
-          onClick={() => setIsDropdownOpen(false)} 
-        />
-        
-        {/* Dropdown Menu */}
-        <ul className="absolute left-0 right-0 top-full z-20 mt-1 max-h-52 overflow-y-auto rounded-xl border border-slate-200 bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5">
-          <li>
-            <button
-              type="button"
-              onClick={() => {
-                if (typeof handleLakeChange === 'function') {
-                  handleLakeChange('')
-                }
-                setIsDropdownOpen(false)
-              }}
-              className="w-full px-4 py-2 text-left text-sm text-slate-500 transition hover:bg-slate-50"
-            >
-              Clear Selection
-            </button>
-          </li>
-          
-          {(lakeOptions || []).slice(1).map((lake, index) => {
-            const lakeLabel = typeof lake === 'string' ? lake : lake?.name || lake?.label || String(lake)
-            const lakeValue = typeof lake === 'string' ? lake : lake?.value || lake?.id || lakeLabel
-
-            return (
-              <li key={lakeValue || index}>
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (typeof handleLakeChange === 'function') {
-                      handleLakeChange(lakeValue)
-                    }
-                    setIsDropdownOpen(false)
-                  }}
-                  className={`w-full px-4 py-2 text-left text-sm transition ${
-                    selectedLake === lakeValue 
-                      ? 'bg-blue-50 font-semibold text-blue-700' 
-                      : 'text-slate-700 hover:bg-slate-50'
+              {/* Lake Select Row */}
+              <div>
+                <div 
+                  onMouseEnter={() => handleMouseEnter('lake')}
+                  onMouseLeave={handleMouseLeave}
+                  className={`grid gap-2 rounded-2xl border p-2.5 shadow-sm transition-colors duration-200 sm:grid-cols-[130px_1fr] sm:items-center ${
+                    selectedLake ? 'border-indigo-300 bg-indigo-50/60' : 'border-slate-200 bg-white'
                   }`}
                 >
-                  {lakeLabel}
-                </button>
-              </li>
-            )
-          })}
-        </ul>
-      </>
-    )}
-  </div>
+                  <div className="rounded-xl bg-slate-100 px-3 py-2">
+                    <div className="text-sm font-bold text-slate-900">Lake</div>
+                  </div>
+                  
+                  <div className="relative min-w-0 flex-1">
+                    <button
+                      type="button"
+                      onClick={() => setIsDropdownOpen((prev) => !prev)}
+                      disabled={loading}
+                      className="flex w-full items-center justify-between rounded-xl border border-slate-300 bg-white px-4 py-2 text-left text-slate-700 shadow-sm outline-none focus:ring-2 focus:ring-blue-100 disabled:opacity-50"
+                    >
+                      <span className="truncate">
+                        {loading ? 'Loading Lakes...' : selectedLake || 'Choose Lake'}
+                      </span>
+                      <span aria-hidden="true" className="ml-2 text-xs text-slate-500">▾</span>
+                    </button>
 
-  {/* Column 3: Info Button */}
-  <button
-    type="button"
-    onClick={() => setSelectedHelp('lake')}
-    className="mx-auto flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-slate-300 bg-white text-sm font-semibold text-slate-600 shadow-sm transition-colors duration-200 hover:bg-slate-50"
-    aria-label="Lake information"
-  >
-    i
-  </button>
-</div>
+                    {isDropdownOpen && !loading && (
+                      <>
+                        <div className="fixed inset-0 z-10" onClick={() => setIsDropdownOpen(false)} />
+                        <ul className="absolute left-0 right-0 top-full z-20 mt-1 max-h-52 overflow-y-auto rounded-xl border border-slate-200 bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5">
+                          <li>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                handleLakeChange('')
+                                setIsDropdownOpen(false)
+                              }}
+                              className="w-full px-4 py-2 text-left text-sm text-slate-500 hover:bg-slate-50"
+                            >
+                              Clear Selection
+                            </button>
+                          </li>
+                          {(lakeOptions || []).slice(1).map((lake, index) => {
+                            const lakeLabel = typeof lake === 'string' ? lake : lake?.name || lake?.label || String(lake)
+                            const lakeValue = typeof lake === 'string' ? lake : lake?.value || lake?.id || lakeLabel
+                            return (
+                              <li key={lakeValue || index}>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    handleLakeChange(lakeValue)
+                                    setIsDropdownOpen(false)
+                                  }}
+                                  className={`w-full px-4 py-2 text-left text-sm ${
+                                    selectedLake === lakeValue ? 'bg-blue-50 font-semibold text-blue-700' : 'text-slate-700 hover:bg-slate-50'
+                                  }`}
+                                >
+                                  {lakeLabel}
+                                </button>
+                              </li>
+                            )
+                          })}
+                        </ul>
+                      </>
+                    )}
+                  </div>
+                </div>
 
-<div className="mt-3 grid gap-4 sm:grid-rows-2">
-  {inputRows.map((row) => {
-    const hasError = validationErrors[row.key] !== '';
-    return (
-      <div
-        key={row.key}
-        className={`grid gap-2 rounded-2xl border p-2.5 shadow-sm sm:grid-cols-[130px_1fr_32px] sm:items-center transition-colors duration-200 ${
-          hasError 
-            ? 'border-red-400 bg-red-50/50' 
-            : 'border-slate-200 bg-white'
-        }`}
-      >
-        {/* Fixed Width Label Box */}
-        <div className={`rounded-xl px-3 py-2 transition-colors duration-200 ${hasError ? 'bg-red-100/50' : 'bg-slate-50'}`}>
-          <div className={`text-sm font-semibold leading-tight ${hasError ? 'text-red-900' : 'text-slate-900'}`}>
-            {row.label}
-          </div>
-        </div>
+                {/* INPUT PAGE BANNER INDICATOR */}
+                {selectedLake && (
+                  <div className="mt-1.5 px-3 py-1.5 text-xs font-semibold text-indigo-800 bg-indigo-100/80 rounded-lg flex items-center justify-between shadow-sm">
+                    <span>Auto-filled from Lake County Health Dept. Lake Reports (Year: {dataYear ?? 'N/A'})</span>
+                  </div>
+                )}
 
-        {/* Flexible Input + Unit Dropdown Container */}
-        <div className="flex min-w-0 flex-1 flex-col gap-2 sm:flex-row">
-          <input
-            type={row.kind}
-            value={
-              row.key === 'surfaceArea'
-                ? surfaceAreaDraft
-                : row.key === 'meanDepth'
-                  ? meanDepthDraft
-                  : lakePhosphorusDraft
-            }
-            onChange={(event) => {
-              setValidationErrors((current) => ({
-                ...current,
-                [row.key]: '',
-              }))
-
-              if (row.key === 'surfaceArea') {
-                setSurfaceAreaDraft(event.target.value)
-                return
-              }
-
-              if (row.key === 'meanDepth') {
-                setMeanDepthDraft(event.target.value)
-                return
-              }
-
-              setLakePhosphorusDraft(event.target.value)
-            }}
-            placeholder={row.placeholder}
-            className={`min-w-0 flex-1 rounded-xl border px-3 py-2 text-center text-slate-800 shadow-sm outline-none transition focus:ring-2 ${
-              hasError 
-                ? 'border-red-300 focus:border-red-400 focus:ring-red-100 bg-red-50/30' 
-                : 'border-slate-300 focus:border-blue-300 focus:ring-2 focus:ring-blue-100 bg-white'
-            }`}
-          />
-
-          <label className="relative min-w-0 sm:w-36 sm:shrink-0">
-            <span className="sr-only">{row.label} units</span>
-            <select
-              value={activeUnit[row.key]}
-              onChange={(event) =>
-                setActiveUnit((current) => ({
-                  ...current,
-                  [row.key]: event.target.value,
-                }))
-              }
-              className={`w-full appearance-none rounded-xl border px-3 py-2 pr-8 text-left text-xs sm:text-sm text-slate-700 shadow-sm outline-none transition focus:ring-2 ${
-                hasError 
-                  ? 'border-red-300 focus:border-red-400 focus:ring-red-100 bg-white' 
-                  : 'border-slate-300 focus:border-blue-300 focus:ring-blue-100 bg-white'
-              }`}
-            >
-              {row.unitOptions.map((unit) => (
-                <option key={unit} value={unit}>
-                  {unit}
-                </option>
-              ))}
-            </select>
-            <span aria-hidden="true" className="pointer-events-none absolute inset-y-0 right-2.5 flex items-center text-slate-500">
-              ▾
-            </span>
-          </label>
-        </div>
-
-        {/* Info Button pinned to right column */}
-        <button
-          type="button"
-          onClick={() => setSelectedHelp(row.key)}
-          className={`mx-auto flex h-8 w-8 shrink-0 items-center justify-center rounded-full border bg-white text-sm font-semibold shadow-sm transition-colors duration-200 ${
-            hasError ? 'border-red-300 text-red-600 hover:bg-red-50' : 'border-slate-300 text-slate-600 hover:bg-slate-50'
-          }`}
-          aria-label={`${row.label} information`}
-        >
-          i
-        </button>
-      </div>
-    )
-  })}
-</div>
-            </div>
-
-            <div className="rounded-3xl p-3">
-              <div className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">
-                Optional & Supplemental Inputs
+                {renderTooltipCard('lake')}
               </div>
 
-              <div className="mt-3 space-y-2 border-t border-slate-200 pt-3">
-                
-                <div className={`grid gap-2 rounded-2xl border p-2.5 shadow-sm sm:grid-cols-[130px_1fr_32px] sm:items-center transition-colors duration-200 ${
-  validationErrors.sedimentPhosphorus !== '' 
-    ? 'border-red-400 bg-red-50/50' 
-    : 'border-slate-200 bg-white'
-}`}>
-  <div className={`rounded-xl px-3 py-2.5 ${validationErrors.sedimentPhosphorus !== '' ? 'bg-red-100/50' : 'bg-slate-50'}`}>
-    <div className={`text-sm font-semibold leading-tight ${validationErrors.sedimentPhosphorus !== '' ? 'text-red-900' : 'text-slate-900'}`}>
-      {optionalUnitRow.label}
-    </div>
-  </div>
-
-  <div className="flex min-w-0 flex-1 flex-col gap-2 sm:flex-row">
-    <input
-      type={optionalUnitRow.kind}
-      value={sedimentPhosphorusDraft}
-      onChange={(event) => {
-        setValidationErrors(current => ({ ...current, sedimentPhosphorus: '' }))
-        setSedimentPhosphorusDraft(event.target.value)
-      }}
-      placeholder={optionalUnitRow.placeholder}
-      className={`min-w-0 flex-1 rounded-xl border px-3 py-2 text-center text-slate-800 shadow-sm outline-none transition focus:ring-2 ${
-        validationErrors.sedimentPhosphorus !== '' 
-          ? 'border-red-300 focus:border-red-400 focus:ring-red-100 bg-red-50/30' 
-          : 'border-slate-300 focus:border-blue-300 focus:ring-blue-100 bg-white'
-      }`}
-    />
-
-    <label className="relative min-w-0 sm:w-36 sm:shrink-0">
-      <span className="sr-only">{optionalUnitRow.label} units</span>
-      <select
-        value={activeUnit[optionalUnitRow.key]}
-        onChange={(event) =>
-          setActiveUnit((current) => ({
-            ...current,
-            [optionalUnitRow.key]: event.target.value,
-          }))
-        }
-        className={`w-full appearance-none rounded-xl border px-3 py-2 pr-8 text-left text-xs sm:text-sm text-slate-700 shadow-sm outline-none transition focus:ring-2 ${
-          validationErrors.sedimentPhosphorus !== '' 
-            ? 'border-red-300 focus:border-red-400 focus:ring-red-100 bg-white' 
-            : 'border-slate-300 focus:border-blue-300 focus:ring-blue-100 bg-white'
-        }`}
-      >
-        {optionalUnitRow.unitOptions.map((unit) => (
-          <option key={unit} value={unit}>
-            {unit}
-          </option>
-        ))}
-      </select>
-      <span aria-hidden="true" className="pointer-events-none absolute inset-y-0 right-2.5 flex items-center text-slate-500">
-        ▾
-      </span>
-    </label>
-  </div>
-
-  <button
-    type="button"
-    onClick={() => setSelectedHelp('sedimentPhosphorus')}
-    className="mx-auto flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-slate-300 bg-white text-sm font-semibold text-slate-600 shadow-sm"
-    aria-label="Sediment phosphorus information"
-  >
-    i
-  </button>
-</div>
-
-                <div className={`flex flex-col gap-2 rounded-2xl border p-2.5 shadow-sm sm:grid-cols-[minmax(0,1fr)_minmax(132px,150px)_32px] sm:items-start transition-colors duration-200 ${
-                  validationErrors.secchi !== '' 
-                    ? 'border-red-400 bg-red-50/50' 
-                    : 'border-slate-200 bg-white'
-                }`}>
-                    <div className="flex flex-col justify-center gap-2 sm:flex-row w-full">
-                      <div className={`rounded-xl w-full px-3 py-2.5 ${validationErrors.secchi !== '' ? 'bg-red-100/50' : 'bg-slate-50'}`}>
-                        <div className={`text-sm font-semibold leading-tight ${validationErrors.secchi !== '' ? 'text-red-900' : 'text-slate-900'}`}>Secchi Depth</div>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => setSelectedHelp('secchi')}
-                        className="mx-auto flex h-8 min-w-8 items-center justify-center rounded-full border border-slate-300 bg-white text-sm font-semibold text-slate-600 shadow-sm"
-                        aria-label="Secchi depth information"
+              {/* Required Input Rows */}
+              <div className="mt-3 grid gap-3">
+                {inputRows.map((row) => {
+                  const hasError = validationErrors[row.key] !== '';
+                  return (
+                    <div key={row.key}>
+                      <div
+                        onMouseEnter={() => handleMouseEnter(row.key)}
+                        onMouseLeave={handleMouseLeave}
+                        className={`grid gap-2 rounded-2xl border p-2.5 shadow-sm sm:grid-cols-[130px_1fr] sm:items-center transition-colors duration-200 ${
+                          hasError 
+                            ? 'border-red-400 bg-red-50/50' 
+                            : isPrefilled
+                              ? 'border-indigo-200 bg-indigo-50/40'
+                              : 'border-slate-200 bg-white'
+                        }`}
                       >
-                        i
-                      </button>
+                        <div className={`rounded-xl px-3 py-2 ${hasError ? 'bg-red-100/50' : 'bg-slate-100'}`}>
+                          <div className={`text-sm font-bold leading-tight ${hasError ? 'text-red-900' : 'text-slate-900'}`}>
+                            {row.label}
+                          </div>
+                        </div>
+
+                        <div className="flex min-w-0 flex-1 flex-col gap-2 sm:flex-row">
+                          <input
+                            type={row.kind}
+                            value={
+                              row.key === 'surfaceArea'
+                                ? surfaceAreaDraft
+                                : row.key === 'meanDepth'
+                                  ? meanDepthDraft
+                                  : lakePhosphorusDraft
+                            }
+                            onChange={(event) => {
+                              setValidationErrors((current) => ({ ...current, [row.key]: '' }))
+                              if (row.key === 'surfaceArea') setSurfaceAreaDraft(event.target.value)
+                              else if (row.key === 'meanDepth') setMeanDepthDraft(event.target.value)
+                              else setLakePhosphorusDraft(event.target.value)
+                            }}
+                            placeholder={row.placeholder}
+                            className={`min-w-0 flex-1 rounded-xl border px-3 py-2 text-center text-slate-800 shadow-sm outline-none transition focus:ring-2 ${
+                              hasError 
+                                ? 'border-red-300 focus:border-red-400 focus:ring-red-100 bg-red-50/30' 
+                                : 'border-slate-300 focus:border-blue-300 focus:ring-blue-100 bg-white'
+                            }`}
+                          />
+
+                          <label className="relative min-w-0 sm:w-36 sm:shrink-0">
+                            <span className="sr-only">{row.label} units</span>
+                            <select
+                              value={activeUnit[row.key]}
+                              onChange={(event) =>
+                                setActiveUnit((current) => ({ ...current, [row.key]: event.target.value }))
+                              }
+                              className="w-full appearance-none rounded-xl border border-slate-300 bg-white px-3 py-2 pr-8 text-xs sm:text-sm text-slate-700 shadow-sm outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
+                            >
+                              {row.unitOptions.map((unit) => (
+                                <option key={unit} value={unit}>
+                                  {unit}
+                                </option>
+                              ))}
+                            </select>
+                            <span aria-hidden="true" className="pointer-events-none absolute inset-y-0 right-2.5 flex items-center text-slate-500">▾</span>
+                          </label>
+                        </div>
+                      </div>
+                      {renderTooltipCard(row.key)}
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+
+            {/* OPTIONAL INPUTS SECTION */}
+            <div>
+              <div className="mb-4 border-b-2 border-sky-400 pb-2">
+                <h2 className="text-base font-extrabold uppercase tracking-wider text-emerald-950">
+                  2. Optional & Supplemental Inputs
+                </h2>
+              </div>
+
+              <div className="space-y-3">
+                {/* Sediment Phosphorus Row */}
+                <div>
+                  <div 
+                    onMouseEnter={() => handleMouseEnter('sedimentPhosphorus')}
+                    onMouseLeave={handleMouseLeave}
+                    className={`grid gap-2 rounded-2xl border p-2.5 shadow-sm sm:grid-cols-[130px_1fr] sm:items-center ${
+                      validationErrors.sedimentPhosphorus !== '' ? 'border-red-400 bg-red-50/50' : 'border-slate-200 bg-white'
+                    }`}
+                  >
+                    <div className="rounded-xl bg-slate-100 px-3 py-2">
+                      <div className="text-sm font-bold text-slate-900">{optionalUnitRow.label}</div>
+                    </div>
+
+                    <div className="flex min-w-0 flex-1 flex-col gap-2 sm:flex-row">
+                      <input
+                        type={optionalUnitRow.kind}
+                        value={sedimentPhosphorusDraft}
+                        onChange={(event) => {
+                          setValidationErrors(current => ({ ...current, sedimentPhosphorus: '' }))
+                          setSedimentPhosphorusDraft(event.target.value)
+                        }}
+                        placeholder={optionalUnitRow.placeholder}
+                        className="min-w-0 flex-1 rounded-xl border border-slate-300 bg-white px-3 py-2 text-center text-slate-800 shadow-sm outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
+                      />
+
+                      <label className="relative min-w-0 sm:w-36 sm:shrink-0">
+                        <select
+                          value={activeUnit[optionalUnitRow.key]}
+                          onChange={(event) =>
+                            setActiveUnit((current) => ({ ...current, [optionalUnitRow.key]: event.target.value }))
+                          }
+                          className="w-full appearance-none rounded-xl border border-slate-300 bg-white px-3 py-2 pr-8 text-xs sm:text-sm text-slate-700 shadow-sm outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
+                        >
+                          {optionalUnitRow.unitOptions.map((unit) => (
+                            <option key={unit} value={unit}>{unit}</option>
+                          ))}
+                        </select>
+                        <span aria-hidden="true" className="pointer-events-none absolute inset-y-0 right-2.5 flex items-center text-slate-500">▾</span>
+                      </label>
+                    </div>
+                  </div>
+                  {renderTooltipCard('sedimentPhosphorus')}
+                </div>
+
+                {/* Secchi Depth Row */}
+                <div>
+                  <div 
+                    onMouseEnter={() => handleMouseEnter('secchi')}
+                    onMouseLeave={handleMouseLeave}
+                    className={`flex flex-col gap-2 rounded-2xl border p-2.5 shadow-sm ${
+                      validationErrors.secchi !== '' ? 'border-red-400 bg-red-50/50' : 'border-slate-200 bg-white'
+                    }`}
+                  >
+                    <div className="flex flex-col justify-center gap-2 sm:flex-row w-full">
+                      <div className="rounded-xl w-full bg-slate-100 px-3 py-2">
+                        <div className="text-sm font-bold text-slate-900">Secchi Depth</div>
+                      </div>
                     </div>
                   
                     <div className="flex min-w-0 flex-col gap-2 sm:flex-row w-full">
                       <input
-                        type="number"
+                        type="text"
                         value={secchiDraft}
                         onChange={(event) => {
                           setValidationErrors(current => ({ ...current, secchi: '' }))
                           setSecchiDraft(event.target.value)
                         }}
-                        placeholder=""
-                        className={`min-w-0 flex-1 rounded-xl border px-3 py-2.5 text-slate-800 shadow-sm outline-none transition focus:ring-2 ${
-                          validationErrors.secchi !== '' 
-                            ? 'border-red-300 focus:border-red-400 focus:ring-red-100 bg-red-50/30' 
-                            : 'border-slate-300 focus:border-blue-300 focus:ring-2 focus:ring-blue-100 bg-white'
-                        }`}
+                        placeholder="e.g. 5.2, 6.1, 4.8"
+                        className="min-w-0 flex-1 rounded-xl border border-slate-300 bg-white px-3 py-2 text-slate-800 shadow-sm outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
                       />
                       
                       <button
                         type="button"
                         onClick={addSecchiMeasurement}
                         disabled={!canAddSecchi}
-                        className="rounded-xl border border-blue-300 bg-blue-100/80 px-3 py-2.5 text-sm font-semibold text-slate-800 shadow-sm transition hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-45"
+                        className="rounded-xl border border-blue-300 bg-blue-100/80 px-4 py-2 text-sm font-bold text-slate-800 shadow-sm transition hover:bg-blue-200 disabled:cursor-not-allowed disabled:opacity-45"
                       >
                         Add
                       </button>
                       
                       <label className="relative min-w-0 flex-none sm:w-[148px]">
-                        <span className="sr-only">Secchi units</span>
                         <select
                           value={activeUnit.secchi}
                           onChange={(event) =>
-                            setActiveUnit((current) => ({
-                              ...current,
-                              secchi: event.target.value,
-                            }))
+                            setActiveUnit((current) => ({ ...current, secchi: event.target.value }))
                           } 
-                          className={`w-full appearance-none rounded-xl border px-3 py-2.5 pr-9 text-left text-sm text-slate-700 shadow-sm outline-none transition focus:ring-2 ${
-                            validationErrors.secchi !== '' 
-                              ? 'border-red-300 focus:border-red-400 focus:ring-red-100 bg-white' 
-                              : 'border-slate-300 focus:border-blue-300 focus:ring-blue-100 bg-white'
-                          }`}
+                          className="w-full appearance-none rounded-xl border border-slate-300 bg-white px-3 py-2 pr-9 text-sm text-slate-700 shadow-sm outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
                         >
                           {secchiUnitOptions.map((unit) => (
-                            <option key={unit} value={unit}>
-                              {unit}
-                            </option>
+                            <option key={unit} value={unit}>{unit}</option>
                           ))}
                         </select>
-                        <span aria-hidden="true" className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-slate-500">
-                          ▾
-                        </span>
+                        <span aria-hidden="true" className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-slate-500">▾</span>
                       </label>
                     </div>
                 
-                    <div className="flex flex-wrap gap-2 w-full">
+                    <div className="flex flex-wrap gap-2 w-full pt-1">
                       {secchiEntries.map((entry) => (
                         <button
                           type="button"
                           key={entry.id}
                           onClick={() => removeSecchiMeasurement(entry.id)}
-                          className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-slate-800 shadow-sm transition hover:bg-blue-100"
-                          aria-label={`Remove secchi measurement ${entry.value}`}
+                          className="inline-flex items-center gap-1.5 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-semibold text-slate-800 shadow-sm hover:bg-blue-100"
                         >
                           <span>{entry.value}</span>
-                          <span aria-hidden="true" className="text-base leading-none">
-                            ×
-                          </span>
+                          <span aria-hidden="true" className="text-sm font-bold leading-none text-slate-500">×</span>
                         </button>
                       ))}
                     </div>
                   </div>
+                  {renderTooltipCard('secchi')}
                 </div>
+
               </div>
             </div>
-          </div>
 
-        <aside className="grid min-h-0 gap-3 overflow-hidden">
-          <div className="rounded-3xl p-3 shadow-sm">
-            <div className="text-sm font-semibold uppercase tracking-[0.16em] text-slate-500">
-              Actions
-            </div>
-            <div className="mt-2 grid gap-2">
-              <Link
-                href="/background"
-                className="rounded-2xl border border-slate-300 bg-white px-4 py-2.5 text-center text-base font-semibold text-slate-800 shadow-sm transition hover:bg-blue-50"
-              >
-                Background Reference
-              </Link>
-              <button
-                type="button"
-                onClick={calculatePhosphorusLoading}
-                className="rounded-2xl border border-slate-300 bg-white px-4 py-2.5 text-center text-base font-semibold text-slate-800 shadow-sm transition hover:bg-blue-50"
-              >
-                Calculate
-              </button>
-            </div>
+          </div>
+        </div>
+
+        {/* Action Controls */}
+        <aside className="mt-2">
+          <div className="rounded-3xl p-3 bg-slate-100/80 flex flex-col sm:flex-row gap-3 justify-end items-center">
+            <Link
+              href="/background"
+              className="w-full sm:w-auto rounded-2xl border border-slate-300 bg-white px-5 py-2.5 text-center text-sm font-semibold text-slate-800 shadow-sm transition hover:bg-slate-50"
+            >
+              Background Reference
+            </Link>
+            <button
+              type="button"
+              onClick={calculatePhosphorusLoading}
+              className="w-full sm:w-auto rounded-2xl bg-blue-600 px-6 py-2.5 text-center text-sm font-bold text-white shadow-md transition hover:bg-blue-700"
+            >
+              Calculate Phosphorus Loading
+            </button>
           </div>
         </aside>
       </section>

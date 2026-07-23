@@ -5,6 +5,7 @@ export interface LakeDetails {
   surfaceArea: number
   meanDepth: number
   lakePhosphorus: number
+  dataYear: number
 }
 
 export async function GET() {
@@ -39,12 +40,14 @@ export async function GET() {
     const areaIndex = headers.indexOf('surfaceArea')
     const depthIndex = headers.indexOf('meanDepth')
     const tpIndex = headers.indexOf('lakePhosphorus')
+    const dataYearIndex = headers.indexOf('dataYear')
 
     // If any column mapping is missing, fallback to standard column index array positions [0, 1, 2, 3]
     const finalNameIdx = nameIndex !== -1 ? nameIndex : 0
     const finalAreaIdx = areaIndex !== -1 ? areaIndex : 1
     const finalDepthIdx = depthIndex !== -1 ? depthIndex : 2
     const finalTpIdx = tpIndex !== -1 ? tpIndex : 3
+    const finalDataYearIdx = dataYearIndex !== -1 ? dataYearIndex : 4
 
     for (let i = 1; i < lines.length; i++) {
       // Splits commas but ignores commas inside quotation marks (in case names contain commas)
@@ -60,6 +63,7 @@ export async function GET() {
           surfaceArea: parseFloat(row[finalAreaIdx]?.trim()) || 0,
           meanDepth: parseFloat(row[finalDepthIdx]?.trim()) || 0,
           lakePhosphorus: parseFloat(row[finalTpIdx]?.trim()) || 0,
+          dataYear: parseInt(row[finalDataYearIdx]?.trim()) || 0,
         }
       }
     }
