@@ -491,11 +491,15 @@ export default function CalculatorClient() {
     .filter(([_, msg]) => msg !== '')
     .map(([key, msg]) => ({ key, msg }))
 
-  const renderTooltipCard = (key: HelpKey) => {
+const renderTooltipCard = (key: HelpKey) => {
     if (activeInlineTooltip !== key) return null
     const content = helpCopy[key]
     return (
-      <div className="mt-2 rounded-xl border border-blue-200 bg-blue-50/90 p-3 text-xs text-slate-800 shadow-sm animate-fadeIn">
+      <div 
+        onMouseEnter={() => handleMouseEnter(key)}
+        onMouseLeave={handleMouseLeave}
+        className="mt-2 rounded-xl border border-blue-200 bg-blue-50/90 p-3 text-sm text-slate-800 shadow-sm animate-fadeIn"
+      >
         <div className="font-bold text-blue-900 mb-1">{content.title}</div>
         <div>
           {content.description}
@@ -540,14 +544,14 @@ export default function CalculatorClient() {
               >
                 Download PDF Report
               </button>
-              
+
               <button
                 type="button"
                 onClick={() => {
                   setView('input')
                   window.scrollTo({ top: 0, behavior: 'smooth' })
                 }}
-                className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50 print:hidden"
+                className="rounded-xl border border-slate-300 bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 print:hidden"
               >
                 Edit Inputs
               </button>
@@ -555,33 +559,33 @@ export default function CalculatorClient() {
           </header>
 
           <div className="bg-slate-50/50 p-4 rounded-xl border border-slate-100">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-900 mb-2">Your Inputs</h3>
+            <h3 className="text-sm font-bold uppercase tracking-wider text-slate-900 mb-2">Your Inputs</h3>
             <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
               <div>
-                <span className="block text-xs text-slate-500">Lake County Health Data Year</span>
+                <span className="block text-sm text-slate-500">Lake County Health Data Year</span>
                 <strong className="text-slate-800">{results.inputs.dataYear == '' ? 'N/A' : results.inputs.dataYear}</strong>
               </div>
               <div>
-                <span className="block text-xs text-slate-500">Surface Area</span>
+                <span className="block text-sm text-slate-500">Surface Area</span>
                 <strong className="text-slate-800">{results.inputs.surfaceArea} {results.inputs.surfaceAreaUnit}</strong>
               </div>
               <div>
-                <span className="block text-xs text-slate-500">Mean Depth</span>
+                <span className="block text-sm text-slate-500">Mean Depth</span>
                 <strong className="text-slate-800">{results.inputs.meanDepth} {results.inputs.meanDepthUnit}</strong>
               </div>
               <div>
-                <span className="block text-xs text-slate-500">Lake Phosphorus</span>
+                <span className="block text-sm text-slate-500">Lake Phosphorus</span>
                 <strong className="text-slate-800">{results.inputs.lakePhosphorus} {results.inputs.lakePhosphorusUnit}</strong>
               </div>
               <div>
-                <span className="block text-xs text-slate-500">Sediment TP</span>
+                <span className="block text-sm text-slate-500">Sediment TP</span>
                 <strong className="text-slate-800">
                   {results.inputs.sedimentPhosphorus ? `${results.inputs.sedimentPhosphorus} ${results.inputs.sedimentPhosphorusUnit}` : 'Skipped'}
                 </strong>
               </div>
               {results.inputs.secchiEntries.length == 0 && (
               <div className="mt-3 pt-3 border-t border-slate-200/60 text-sm">
-                <span className="block text-xs text-slate-500 mb-1">Secchi Readings</span>
+                <span className="block text-sm text-slate-500 mb-1">Secchi Readings</span>
                 <strong className="text-slate-800">
                   Skipped
                 </strong>
@@ -591,10 +595,10 @@ export default function CalculatorClient() {
 
             {results.inputs.secchiEntries.length > 0 && (
               <div className="mt-3 pt-3 border-t border-slate-200/60 text-sm">
-                <span className="block text-xs text-slate-500 mb-1">Secchi Readings ({results.inputs.secchiUnit})</span>
+                <span className="block text-sm text-slate-500 mb-1">Secchi Readings ({results.inputs.secchiUnit})</span>
                 <div className="flex flex-wrap gap-1.5">
                     {results.inputs.secchiEntries.map((val, idx) => (
-                        <span key={idx} className="inline-block bg-white border border-slate-200 rounded-md px-2 py-0.5 text-slate-800 text-xs font-medium">
+                        <span key={idx} className="inline-block bg-white border border-slate-200 rounded-md px-2 py-0.5 text-slate-800 text-sm font-medium">
                             {val}
                         </span>
                     ))}
@@ -607,7 +611,7 @@ export default function CalculatorClient() {
             <div className="flex flex-col justify-between rounded-2xl bg-rose-50/50 p-5 shadow-sm border border-rose-100">
               <div>
                 <h4 className="text-sm font-bold uppercase tracking-wider text-rose-800">1. Internal Loading</h4>
-                <p className="text-xs text-slate-600 mt-1">
+                <p className="text-sm text-slate-600 mt-1">
                   The result labeled Est. Internal Phosphorus Loading is the 
                   most reliable estimate. <strong>Treat all of the measurements 
                   as a range of possible values</strong> rather than believing in a single precise 
@@ -616,20 +620,20 @@ export default function CalculatorClient() {
                 </p>
                 <div className="mt-4 space-y-2">
                   <div className="flex justify-between items-center border-b border-dashed border-rose-200/50 pb-1.5">
-                    <span className="text-xs text-slate-700">Sediment Model:</span>
+                    <span className="text-sm text-slate-700">Sediment Model:</span>
                     <strong className="text-sm font-mono text-slate-900">{results.internalSed ? `${Number(results.internalSed).toFixed(0)} lbs/yr` : '—'}</strong>
                   </div>
                   <div className="flex justify-between items-center border-b border-dashed border-rose-200/50 pb-1.5">
-                    <span className="text-xs text-slate-700">Secchi Model:</span>
+                    <span className="text-sm text-slate-700">Secchi Model:</span>
                     <strong className="text-sm font-mono text-slate-900">{results.internalSecchi ? `${Number(results.internalSecchi).toFixed(0)} lbs/yr` : '—'}</strong>
                   </div>
                   <div className="flex justify-between items-center pb-1.5">
-                    <span className="text-xs text-slate-700">Lake TP Model:</span>
+                    <span className="text-sm text-slate-700">Lake TP Model:</span>
                     <strong className="text-sm font-mono text-slate-900">{results.internalLake ? `${Number(results.internalLake).toFixed(0)} lbs/yr` : '—'}</strong>
                   </div>
                 </div>
               </div>
-              <div className="mt-4 bg-rose-100 border border-rose-300 rounded-xl p-2.5 text-center text-rose-800 text-xs font-semibold">
+              <div className="mt-4 bg-rose-100 border border-rose-300 rounded-xl p-2.5 text-center text-rose-800 text-sm font-semibold">
                 Est. Internal Phosphorus Loading: {results.internalSed ? `${Number(results.internalSed).toFixed(0)} lbs/year` : results.internalSecchi ? `${Number(results.internalSecchi).toFixed(0)} lbs/year` : results.internalLake ? `${Number(results.internalLake).toFixed(0)} lbs/year` : '—'}
               </div>
             </div>
@@ -638,7 +642,7 @@ export default function CalculatorClient() {
               <div>
                 <h4 className="text-sm font-bold uppercase tracking-wider text-sky-800">2. External Loading</h4>
               </div>
-              <div className="mt-4 bg-sky-100 border border-sky-300 rounded-xl p-2.5 text-center text-sky-800 text-xs font-semibold">
+              <div className="mt-4 bg-sky-100 border border-sky-300 rounded-xl p-2.5 text-center text-sky-800 text-sm font-semibold">
                 Placeholder
               </div>
             </div>
@@ -647,28 +651,33 @@ export default function CalculatorClient() {
               <div>
                 <h4 className="text-sm font-bold uppercase tracking-wider text-emerald-800">3. Algal Blooms</h4>
               </div>
-              <div className="mt-4 bg-emerald-100 border border-emerald-300 rounded-xl p-2.5 text-center text-emerald-800 text-xs font-semibold">
+              <div className="mt-4 bg-emerald-100 border border-emerald-300 rounded-xl p-2.5 text-center text-emerald-800 text-sm font-semibold">
                 Placeholder
               </div>
             </div>
           </div>
 
-          <footer className="mt-6 border-t border-slate-200 pt-5 text-xs text-slate-500 space-y-4">
+          <footer className="mt-6 border-t border-slate-200 pt-5 text-sm text-slate-500 space-y-4">
             <div className="p-1">
               <span className="block font-bold text-slate-700 uppercase tracking-wide mb-1.5">Disclaimer & Modeling Limitations</span>
-              <p className="leading-relaxed text-xs">
+              <p className="leading-relaxed text-sm">
                 The output is just an estimate of the phosphorus load based on published formulas from Gertrud Nernberg's book Lake Functioningand extensive research on lakes in Northern America. This estimate provides an in-the-ballpark value helpful for treatment decisions rather than a precise one. It is not equivalent to site-specific data produced by certified environmental professionals.
               </p>
             </div>
             <div className="p-1">
               <span className="block font-bold text-slate-700 uppercase tracking-wide mb-1.5">Academic Literature Framework</span>
-              <p className="leading-relaxed text-xs">
-              The major formulas utilized come from Gertrud Nurnberg's authoritative volume Lake Functioning, as well as peer-reviewed research papers authored by Gertrud Nurnberg, Lindsey D. Carter, and Andrew R. Dzialowski published in reputable Freshwater Science Journals. See detailed references in the background section.
+              <p className="leading-relaxed text-sm">
+              The major formulas utilized come from Gertrud Nurnberg's authoritative volume Lake Functioning, as well as peer-reviewed research papers authored by Gertrud Nurnberg, Lindsey D. Carter, and Andrew R. Dzialowski published in reputable Freshwater Science Journals. See detailed references in the background section: <Link
+                href="/background"
+                className="font-semibold text-blue-700 underline ml-1"
+              >
+                Background Reference
+              </Link>
               </p>
             </div>
             <div className="p-1">
               <span className="block font-bold text-slate-700 uppercase tracking-wide mb-1.5">Scientific Advisory Board</span>
-              <p className="leading-relaxed text-xs">
+              <p className="leading-relaxed text-sm">
               Developed under the technical advisement of Paul Spiewak (former analytical chemist & science enthusiast), Allen Melcer (former environmental manager at the US Environmental Protection Agency), and James Bland (former contributor to freshwater ecosystems at the Shedd Aquarium and environmental sciences professor). Project management was coordinated by Becky Sawle (former AbbVie Innovation Projects Lead).
               </p>
             </div>
@@ -690,8 +699,7 @@ export default function CalculatorClient() {
           </div>
         </header>
 
-        {/* Global Guidance Notice */}
-        <div className="rounded-2xl p-3 text-xs text-black-900">
+        <div className="rounded-2xl p-3 text-sm text-black-900">
           <p className="font-semibold">Important Guidelines:</p>
           <ul className="mt-1 list-none list-inside space-y-0.5 text-slate-900">
             <li>Multiple units are supported for each input. <strong>Select your preferred unit using the dropdown</strong> next to each field.</li>
@@ -703,7 +711,7 @@ export default function CalculatorClient() {
         {/* Active Errors List */}
         {activeErrorsList.length > 0 && (
           <div className="p-3 bg-red-50 border border-red-200 rounded-2xl text-red-700">
-            <ul className="list-none space-y-1 text-xs">
+            <ul className="list-none space-y-1 text-sm">
               {activeErrorsList.map(({ key, msg }) => (
                 <li key={key}>
                   <strong>{msg}</strong>
@@ -729,7 +737,7 @@ export default function CalculatorClient() {
                 <div 
                   onMouseEnter={() => handleMouseEnter('lake')}
                   onMouseLeave={handleMouseLeave}
-                  className={`grid gap-2 rounded-2xl border p-2.5 shadow-sm transition-colors duration-200 sm:grid-cols-[130px_1fr] sm:items-center ${
+                  className={`grid gap-2 rounded-2xl border p-2.5 transition-colors duration-200 sm:grid-cols-[130px_1fr] sm:items-center ${
                     selectedLake ? 'border-indigo-300 bg-indigo-50/60' : 'border-slate-200 bg-white'
                   }`}
                 >
@@ -747,7 +755,7 @@ export default function CalculatorClient() {
                       <span className="truncate">
                         {loading ? 'Loading Lakes...' : selectedLake || 'Choose Lake'}
                       </span>
-                      <span aria-hidden="true" className="ml-2 text-xs text-slate-500">▾</span>
+                      <span aria-hidden="true" className="ml-2 text-sm text-slate-500">▾</span>
                     </button>
 
                     {isDropdownOpen && !loading && (
@@ -794,7 +802,7 @@ export default function CalculatorClient() {
 
                 {/* INPUT PAGE BANNER INDICATOR */}
                 {selectedLake && (
-                  <div className="mt-1.5 px-3 py-1.5 text-xs font-semibold text-indigo-800 bg-indigo-100/80 rounded-lg flex items-center justify-between shadow-sm">
+                  <div className="mt-1.5 px-3 py-1.5 text-sm font-semibold text-indigo-800 bg-indigo-100/80 rounded-lg flex items-center justify-between shadow-sm">
                     <span>Auto-filled from Lake County Health Dept. Lake Reports (Year: {dataYear ?? 'N/A'})</span>
                   </div>
                 )}
@@ -856,7 +864,7 @@ export default function CalculatorClient() {
                               onChange={(event) =>
                                 setActiveUnit((current) => ({ ...current, [row.key]: event.target.value }))
                               }
-                              className="w-full appearance-none rounded-xl border border-slate-300 bg-white px-3 py-2 pr-8 text-xs sm:text-sm text-slate-700 shadow-sm outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
+                              className="w-full appearance-none rounded-xl border border-slate-300 bg-white px-3 py-2 pr-8 text-sm sm:text-sm text-slate-700 shadow-sm outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
                             >
                               {row.unitOptions.map((unit) => (
                                 <option key={unit} value={unit}>
@@ -915,7 +923,7 @@ export default function CalculatorClient() {
                           onChange={(event) =>
                             setActiveUnit((current) => ({ ...current, [optionalUnitRow.key]: event.target.value }))
                           }
-                          className="w-full appearance-none rounded-xl border border-slate-300 bg-white px-3 py-2 pr-8 text-xs sm:text-sm text-slate-700 shadow-sm outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
+                          className="w-full appearance-none rounded-xl border border-slate-300 bg-white px-3 py-2 pr-8 text-sm sm:text-sm text-slate-700 shadow-sm outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
                         >
                           {optionalUnitRow.unitOptions.map((unit) => (
                             <option key={unit} value={unit}>{unit}</option>
@@ -986,7 +994,7 @@ export default function CalculatorClient() {
                           type="button"
                           key={entry.id}
                           onClick={() => removeSecchiMeasurement(entry.id)}
-                          className="inline-flex items-center gap-1.5 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-semibold text-slate-800 shadow-sm hover:bg-blue-100"
+                          className="inline-flex items-center gap-1.5 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-sm font-semibold text-slate-800 shadow-sm hover:bg-blue-100"
                         >
                           <span>{entry.value}</span>
                           <span aria-hidden="true" className="text-sm font-bold leading-none text-slate-500">×</span>
@@ -1004,11 +1012,11 @@ export default function CalculatorClient() {
         </div>
 
         {/* Action Controls */}
-        <aside className="mt-2">
+        <aside className="">
           <div className="rounded-3xl p-3 bg-slate-100/80 flex flex-col sm:flex-row gap-3 justify-end items-center">
             <Link
               href="/background"
-              className="w-full sm:w-auto rounded-2xl border border-slate-300 bg-white px-5 py-2.5 text-center text-sm font-semibold text-slate-800 shadow-sm transition hover:bg-slate-50"
+              className="w-full sm:w-auto rounded-2xl border border-slate-300 bg-blue-600 px-5 py-2.5 text-center text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700"
             >
               Background Reference
             </Link>
