@@ -18,7 +18,7 @@ const handleButtons = async (formData: FormData) => {
 const Home = () => {
   return (
     <main className="mx-auto flex w-full items-center px-6 sm:px-8 lg:px-12">
-      <section className="flex w-full flex-col gap-20 rounded-[2rem] border border-white/85 bg-white/65 p-7 backdrop-blur-md sm:p-8 lg:p-10">
+      <section className="flex w-full flex-col gap-20 rounded-[2rem] border border-white/85 bg-slate-50 p-7 backdrop-blur-md sm:p-8 lg:p-10">
         <h1 className="w-full max-w-5xl text-center mx-auto">The Phosphorus Calculator</h1>
 
         <div className="grid gap-7 lg:grid-cols-[0.95fr_0.95fr] lg:items-center">
@@ -54,10 +54,10 @@ const Home = () => {
 
             <div className="mt-6 flex flex-col items-center justify-center sm:flex-row lg:justify-center">
               <form action={handleButtons} className="w-full flex flex-col items-center gap-5 sm:flex-row">
-                <button type="submit" name="intent" value="get-started" className="inline-flex w-full items-center justify-center rounded-full bg-blue-500/10 px-6 py-3 text-base font-semibold text-slate-900 shadow-lg shadow-slate-900/20 transition hover:-translate-y-0.5 hover:bg-blue-100/25">
+                <button type="submit" name="intent" value="get-started" className="inline-flex w-full items-center justify-center rounded-full bg-blue-200 px-6 py-3 text-base font-semibold text-slate-900 shadow-lg shadow-slate-900/20 transition hover:-translate-y-0.5 hover:bg-blue-300">
                   Get Started
                 </button>
-                <button type="submit" name="intent" value="learn-more" className="inline-flex w-full items-center justify-center rounded-full border border-slate-300 bg-white/80 px-6 py-3 text-base font-semibold text-slate-900 shadow-sm transition hover:-translate-y-0.5 hover:bg-white">
+                <button type="submit" name="intent" value="learn-more" className="inline-flex w-full items-center justify-center rounded-full border border-slate-300 bg-slate-300 px-6 py-3 text-base font-semibold text-slate-900 shadow-sm transition hover:-translate-y-0.5 hover:bg-slate-400">
                   Learn More
                 </button>
               </form>
