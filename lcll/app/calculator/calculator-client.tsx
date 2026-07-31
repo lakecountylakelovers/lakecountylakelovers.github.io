@@ -666,24 +666,7 @@ export default function CalculatorClient() {
             </Link>
           )}
         </div>
-
-        {/* Dynamic Instruction Notes Input Box for lakePhosphorus */}
-        {key === 'lakePhosphorus' ? (
-          <div className="mt-2">
-            <label className="block text-[10px] font-bold uppercase tracking-wider text-blue-800 mb-1">
-              Write Custom Instructions:
-            </label>
-            <textarea
-              value={customTpInstructions}
-              onChange={(e) => setCustomTpInstructions(e.target.value)}
-              placeholder="Type your custom instructions or guidance here..."
-              rows={2}
-              className="w-full rounded-lg border border-blue-200 bg-white p-2 text-xs text-slate-800 outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-300"
-            />
-          </div>
-        ) : (
-          <div className="mt-1 text-[10px] font-bold uppercase tracking-wider text-blue-600">{content.note}</div>
-        )}
+        <div className="mt-1 text-[10px] font-bold uppercase tracking-wider text-blue-600">{content.note}</div>
       </div>
     )
   }
