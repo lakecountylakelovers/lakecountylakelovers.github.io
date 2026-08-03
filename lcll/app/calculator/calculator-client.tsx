@@ -93,6 +93,7 @@ type NormalizedCalculationDraft = {
 }
 
 const PO4_TO_P_RATIO = 30.973761998 / 94.969761998
+const TP_DETECTION_LIMIT_UG_L_AS_P = 20
 
 const parseOptionalNumber = (value?: string) => {
   if (value == null) return null
@@ -362,7 +363,7 @@ export default function CalculatorClient() {
     if (activeUnit.secchi === 'ft') {
       const ft = Math.floor(avgInches / 12)
       const inches = Math.round(avgInches % 12)
-      return inches > 0 ? `${ft}' ${inches}''` : `${(avgInches / 12).toFixed(1)} ft`
+      return inches > 0 ? `${ft} ft ${inches} in` : `${(avgInches / 12).toFixed(1)} ft`
     } else if (activeUnit.secchi === 'm') {
       return `${((avgInches * 2.54) / 100).toFixed(2)} m`
     } else {
@@ -648,6 +649,43 @@ export default function CalculatorClient() {
     .filter(([_, msg]) => msg !== '')
     .map(([key, msg]) => ({ key, msg }))
 
+  const resultOsgoodIndex = useMemo(() => {
+    if (!results) return null
+
+    const surfaceAreaValue = parseOptionalNumber(results.inputs.surfaceArea)
+    const meanDepthValue = parseOptionalNumber(results.inputs.meanDepth)
+    const meanDepthInchesValue = parseOptionalNumber(results.inputs.meanDepthInches)
+
+    if (surfaceAreaValue == null || surfaceAreaValue <= 0 || (meanDepthValue == null && meanDepthInchesValue == null)) {
+      return null
+    }
+
+    const normalizedSurfaceArea = convertSurfaceAreaToSqKm(surfaceAreaValue, results.inputs.surfaceAreaUnit)
+    const normalizedMeanDepth = convertMeanDepthToM(
+      meanDepthValue ?? 0,
+      results.inputs.meanDepthUnit,
+      meanDepthInchesValue,
+    )
+
+    if (normalizedSurfaceArea == null || normalizedMeanDepth == null || normalizedSurfaceArea <= 0) {
+      return null
+    }
+
+    return normalizedMeanDepth / Math.sqrt(normalizedSurfaceArea)
+  }, [results])
+
+  const resultTpUgLP = useMemo(() => {
+    if (!results) return null
+
+    const lakePhosphorusValue = parseOptionalNumber(results.inputs.lakePhosphorus)
+    if (lakePhosphorusValue == null) return null
+
+    return convertPhosphorusToUgL(lakePhosphorusValue, results.inputs.lakePhosphorusUnit)
+  }, [results])
+
+  const resultTpOnOrBelowDetectionLimit = resultTpUgLP != null && resultTpUgLP <= TP_DETECTION_LIMIT_UG_L_AS_P
+  const resultIsStratified = resultOsgoodIndex != null && resultOsgoodIndex >= 4
+
   const renderTooltipCard = (key: HelpKey) => {
     if (activeInlineTooltip !== key) return null
     const content = helpCopy[key]
@@ -665,6 +703,11 @@ export default function CalculatorClient() {
               Lake Reports
             </Link>
           )}
+          {key == 'secchi' && (
+            <Link href='https://vpnww-299518.projects.earthengine.app/view/lcllpilot' target='_blank' className='text-blue-700 font-semibold underline ml-1'>
+              Google Earth Data
+            </Link>
+          )}
         </div>
         <div className="mt-1 text-[10px] font-bold uppercase tracking-wider text-blue-600">{content.note}</div>
       </div>
@@ -675,7 +718,13 @@ export default function CalculatorClient() {
     return (
       <main className="mx-auto w-full px-3 py-2 sm:px-4 sm:py-3 lg:px-6">
         <section className="w-full flex flex-col gap-5 overflow-hidden rounded-[1.5rem] border border-white/70 bg-white/90 p-4 backdrop-blur-md">
-          
+          <div className="hidden print:flex print:items-center">
+            <img 
+              src="/lcll.png" 
+              alt="LCLL Logo" 
+              className="h-25 w-auto m-auto" 
+            />
+          </div>
           <header className="border-b border-slate-200 pb-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
             <div>
               <h1 className="text-xl font-bold text-slate-900">
@@ -708,7 +757,7 @@ export default function CalculatorClient() {
                   setView('input')
                   window.scrollTo({ top: 0, behavior: 'smooth' })
                 }}
-                className="rounded-xl border border-slate-300 bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 print:hidden"
+                className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-800 shadow-sm hover:bg-slate-100 print:hidden"
               >
                 Edit Inputs
               </button>
@@ -730,7 +779,7 @@ export default function CalculatorClient() {
                 <span className="block text-sm text-slate-500">Mean Depth</span>
                 <strong className="text-slate-800">
                   {results.inputs.meanDepth} {results.inputs.meanDepthUnit}
-                  {results.inputs.meanDepthInches ? ` ${results.inputs.meanDepthInches}''` : ''}
+                  {results.inputs.meanDepthUnit == 'ft' && results.inputs.meanDepthInches ? ` ${results.inputs.meanDepthInches} in` : ''}
                 </strong>
               </div>
               <div>
@@ -788,73 +837,111 @@ export default function CalculatorClient() {
             )}
           </div>
 
-          <div className="grid gap-4 md:grid-cols-3">
-            <div className="flex flex-col justify-between rounded-2xl bg-rose-50/50 p-5 shadow-sm border border-rose-100">
-  <div>
-    <h4 className="text-sm font-bold uppercase tracking-wider text-rose-800">1. Internal Loading</h4>
-    <p className="text-sm text-slate-800 mt-1">
-      The result labeled Est. Internal Phosphorus Loading is the 
-      most reliable estimate. <strong>Treat all of the measurements 
-      as a range of possible values</strong> rather than believing in a single precise 
-      value. <strong>The Total Phosphorus model must be used with caution</strong>, since if the data was 
-      from an old lake report, it is representative of an older condition of the lake.
-    </p>
+          <div className="grid gap-4 md:grid-cols-3 items-stretch">
+            <div className="flex h-full flex-col rounded-2xl bg-rose-50/50 p-5 shadow-sm border border-rose-100">
+              <div className="flex h-full flex-col">
+                <div>
+                  <h4 className="text-sm font-bold uppercase tracking-wider text-rose-800">1. Internal Loading</h4>
+                  <p className="text-sm text-slate-800 mt-1">
+                    The result labeled Est. Internal Phosphorus Loading is the most reliable estimate. <strong>Treat all of the measurements as a range of possible values</strong> rather than believing in a single precise value. <strong>The Total Phosphorus model must be used with caution</strong>, since if the data was from an old lake report, it is representative of an older condition of the lake.
+                  </p>
+                </div>
 
-    <div className="mt-4 space-y-2">
-      {/* 1. Sediment Model (Highest Priority) */}
-      <div className="flex justify-between items-center border-b border-dashed border-rose-200/50 pb-1.5">
-        <span className="text-sm text-slate-700">Sediment Model:</span>
-        <strong className="text-sm font-mono text-slate-900">{results.internalSed ? `${Number(results.internalSed).toFixed(0)} lbs/yr` : '—'}</strong>
-      </div>
+                <div className="mt-4 space-y-2">
+                  <div className="flex items-center justify-between border-b border-dashed border-rose-200/50 pb-1.5">
+                    <span className="text-sm text-slate-700">Sediment Model:</span>
+                    <strong className="text-sm font-mono text-slate-900">{results.internalSed ? `${Number(results.internalSed).toFixed(0)} lbs/yr` : '—'}</strong>
+                  </div>
 
-      {/* 2. Manual / Current Lake TP Model (Ranks above Secchi) */}
-      {results.inputs.isTpRecent && (
-        <div className="flex justify-between items-center border-b border-dashed border-rose-200/50 pb-1.5">
-          <span className="text-sm text-slate-700">
-            Lake TP Model <span className="text-[10px] uppercase font-bold text-emerald-700">(Manual Entry)</span>:
-          </span>
-          <strong className="text-sm font-mono text-slate-900">{results.internalLake ? `${Number(results.internalLake).toFixed(0)} lbs/yr` : '—'}</strong>
-        </div>
-      )}
+                  {results.inputs.isTpRecent && (
+                    <div className="flex items-center justify-between border-b border-dashed border-rose-200/50 pb-1.5">
+                      <span className="text-sm text-slate-700">
+                        Lake TP Model <span className="text-[10px] uppercase font-bold text-emerald-700">(Manual Entry)</span>:
+                      </span>
+                      <strong className="text-sm font-mono text-slate-900">{results.internalLake ? `${Number(results.internalLake).toFixed(0)} lbs/yr` : '—'}</strong>
+                    </div>
+                  )}
 
-      {/* 3. Secchi Model (Ranks above Default Prefilled TP) */}
-      <div className="flex justify-between items-center border-b border-dashed border-rose-200/50 pb-1.5">
-        <span className="text-sm text-slate-700">Secchi Model:</span>
-        <strong className="text-sm font-mono text-slate-900">{results.internalSecchi ? `${Number(results.internalSecchi).toFixed(0)} lbs/yr` : '—'}</strong>
-      </div>
+                  <div className="flex items-center justify-between border-b border-dashed border-rose-200/50 pb-1.5">
+                    <span className="text-sm text-slate-700">Secchi Model:</span>
+                    <strong className="text-sm font-mono text-slate-900">{results.internalSecchi ? `${Number(results.internalSecchi).toFixed(0)} lbs/yr` : '—'}</strong>
+                  </div>
 
-      {/* 4. Default / Prefilled Lake TP Model (Lowest Priority, displayed only if NOT manual) */}
-      {!results.inputs.isTpRecent && (
-        <div className="flex justify-between items-center pb-1.5">
-          <span className="text-sm text-slate-700">
-            Lake TP Model <span className="text-[10px] uppercase font-bold text-slate-500">({dataYear ? dataYear : 'Default'})</span>:
-          </span>
-          <strong className="text-sm font-mono text-slate-900">{results.internalLake ? `${Number(results.internalLake).toFixed(0)} lbs/yr` : '—'}</strong>
-        </div>
-      )}
-    </div>
-  </div>
+                  {!results.inputs.isTpRecent && (
+                    <div className="flex items-center justify-between pb-1.5">
+                      <span className="text-sm text-slate-700">
+                        Lake TP Model <span className="text-[10px] uppercase font-bold text-slate-500">({dataYear ? dataYear : 'Default'})</span>:
+                      </span>
+                      <strong className="text-sm font-mono text-slate-900">{results.internalLake ? `${Number(results.internalLake).toFixed(0)} lbs/yr` : '—'}</strong>
+                    </div>
+                  )}
+                </div>
 
-  <div className="mt-4 bg-rose-100 border border-rose-300 rounded-xl p-2.5 text-center text-rose-800 text-sm font-semibold">
-    Est. Internal Phosphorus Loading: {results.recommendedInternal ? `${Number(results.recommendedInternal).toFixed(0)} lbs/year` : '—'}
-  </div>
-</div>
-
-            <div className="flex flex-col justify-between rounded-2xl bg-sky-50/50 p-5 shadow-sm border border-sky-100">
-              <div>
-                <h4 className="text-sm font-bold uppercase tracking-wider text-sky-800">2. External Loading</h4>
-              </div>
-              <div className="mt-4 bg-sky-100 border border-sky-300 rounded-xl p-2.5 text-center text-sky-800 text-sm font-semibold">
-                Placeholder
+                <div className="mt-auto pt-4">
+                  <div className="rounded-xl border border-rose-300 bg-rose-100 p-2.5 text-center text-sm font-semibold text-rose-800">
+                    Est. Internal Phosphorus Loading: {results.recommendedInternal ? `${Number(results.recommendedInternal).toFixed(0)} lbs/year` : '—'}
+                  </div>
+                </div>
               </div>
             </div>
-            
-            <div className="flex flex-col justify-between rounded-2xl bg-emerald-50/50 p-5 shadow-sm border border-emerald-100">
-              <div>
-                <h4 className="text-sm font-bold uppercase tracking-wider text-emerald-800">3. Algal Blooms</h4>
+
+            <div className="flex h-full flex-col rounded-2xl bg-emerald-50/50 p-5 shadow-sm border border-emerald-100">
+              <div className="flex h-full flex-col">
+                <div>
+                  <h4 className="text-sm font-bold uppercase tracking-wider text-emerald-800">2. Algal Blooms</h4>
+                  <p className="text-sm text-slate-800 mt-1">
+                    Internal Phosphorus loading supports <strong>algal and cyanobacteria growth</strong>. Even when not the most predominant source, it continuously works together with <strong>urbanization, agriculture, climate change, and industrialization</strong> in helping form algal blooms.
+                  </p>
+                  <p className="text-sm text-slate-800 mt-2">
+                    To further <strong>understand the impact of internal load on your lake</strong>, we use a very simplified conversion to show how the internal loading in your lake contributes to algal and cyanobacteria growth. This is <strong>a very rough estimate</strong>, assuming approximately 500 pounds of wet algae per pound of internal loading.
+                  </p>
+                </div>
+
+                <div className="mt-auto pt-4">
+                  <div className="rounded-xl border border-emerald-300 bg-emerald-100 p-2.5 text-center text-sm font-semibold text-emerald-800">
+                    Est. Wet Algae: {results.recommendedInternal ? `${(Number(results.recommendedInternal) * 500).toFixed(0)} lbs/year` : '—'}
+                  </div>
+                </div>
               </div>
-              <div className="mt-4 bg-emerald-100 border border-emerald-300 rounded-xl p-2.5 text-center text-emerald-800 text-sm font-semibold">
-                Placeholder
+            </div>
+
+            <div className="flex h-full flex-col rounded-2xl bg-sky-50/50 p-5 shadow-sm border border-sky-100">
+              <div className="flex h-full flex-col">
+                <div>
+                  <h4 className="text-sm font-bold uppercase tracking-wider text-sky-800">3. Further Interpretations</h4>
+                </div>
+
+                <div className="space-y-3">
+
+                  <div className="">
+                    <p className="mt-1 text-sm text-slate-800">
+                      {resultTpUgLP != null
+                        ? (<span className="text-sm text-slate-800">
+                            The TP detection limit is 0.020 mg/L as P. <strong>Your lake was {resultTpOnOrBelowDetectionLimit ? 'on or below' : 'above'} that limit. </strong> 
+                            When a result is <strong>on or below the detection limit, it usually means the lake is doing well</strong>, and the reported TP model might be an overestimate.
+                          </span>)
+                        : (<span className="text-sm text-slate-800">
+                            TP could not be evaluated because no total phosphorus value was available.
+                            When a result is on or below the detection limit, it usually means the lake 
+                            is doing well, and the reported TP model might be an overestimate.
+                          </span>)}
+                    </p>
+                  </div>
+
+                  <div className="">
+                    <p className="mt-1 text-sm text-slate-800">
+                      An Osgood Index helps explain <strong>the shape of the lake and its tendency to stratify</strong>.
+                      In more stratified lakes, the phosphorus, although released, does not enter the upper layers and fertilize the algae as often.
+                      An osgood index of <strong>4 or above</strong> indicates a high likelihood of stratification, 
+                      though this cutoff can be <strong>less exact in lakes with unusual shape or extreme depths</strong> in some places.
+                    </p>
+                    <div className="mt-3 rounded-xl border border-sky-200 bg-sky-100 p-2.5 text-center text-sm font-semibold text-sky-800">
+                      {resultOsgoodIndex != null
+                        ? `Osgood Index: ${resultOsgoodIndex.toFixed(2)} -> ${resultIsStratified ? 'Stratified' : 'Not Stratified'}`
+                        : 'Osgood Index: —'}
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -904,9 +991,10 @@ export default function CalculatorClient() {
         <div className="rounded-2xl p-3 text-sm text-slate-900">
           <p className="font-semibold">Important Guidelines:</p>
           <ul className="mt-1 list-none list-inside space-y-0.5 text-slate-900">
-            <li>Multiple units are supported for each input. <strong>Select your preferred unit using the dropdown</strong> next to each field.</li>
-            <li>Especially be careful about the distinction between <strong>Phosphorus & Phosphate</strong></li>
+            <li>Multiple units are supported for each input. <strong>Select your preferred unit using the dropdown</strong> next to each field. </li>
+            <li>Be careful about the distinction between <strong>Phosphorus & Phosphate</strong></li>
             <li>Ensure all entered data inputs are collected from the <strong>same calendar year</strong> for consistency (Except if you do not have a current-year Total Phosphorus value).</li>
+            <li>The<Link href='https://www.lakecounty.gov/health-department' target='_blank' className='text-blue-700 font-semibold underline ml-1'>Lake County Health Department Report</Link> and<Link href='https://vpnww-299518.projects.earthengine.app/view/lcllpilot' target='_blank' className='text-blue-700 font-semibold underline ml-1'>Google Earth Data</Link> will be helpful</li>
           </ul>
         </div>
 
@@ -1110,7 +1198,7 @@ export default function CalculatorClient() {
                                   : 'border-slate-300 focus:border-blue-300 focus:ring-blue-100 bg-white'
                               }`}
                             />
-                            <span className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-400">&apos;</span>
+                            <span className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-400">ft</span>
                           </div>
 
                           <div className="relative flex-1">
@@ -1124,7 +1212,7 @@ export default function CalculatorClient() {
                               placeholder="Inches"
                               className="w-full rounded-xl border border-slate-300 bg-white py-2 pl-3 pr-7 text-center text-slate-800 shadow-sm outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
                             />
-                            <span className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-400">&apos;&apos;</span>
+                            <span className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-400">in</span>
                           </div>
                         </div>
                       ) : (
@@ -1420,7 +1508,7 @@ export default function CalculatorClient() {
                             className="w-full rounded-xl border border-slate-300 bg-white py-2 pl-3 pr-6 text-slate-800 shadow-sm outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
                           />
                           {activeUnit.secchi === 'ft' && (
-                            <span className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-400">&apos;</span>
+                            <span className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-400">ft</span>
                           )}
                         </div>
 
@@ -1436,7 +1524,7 @@ export default function CalculatorClient() {
                               placeholder="Inches"
                               className="w-full rounded-xl border border-slate-300 bg-white py-2 pl-3 pr-7 text-center text-slate-800 shadow-sm outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
                             />
-                            <span className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-400">&apos;&apos;</span>
+                            <span className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-400">in</span>
                           </div>
                         )}
                       </div>
@@ -1503,7 +1591,7 @@ export default function CalculatorClient() {
           <div className="rounded-3xl p-3 bg-slate-100/80 flex flex-col sm:flex-row gap-3 justify-end items-center">
             <Link
               href="/background"
-              className="w-full sm:w-auto rounded-2xl border border-slate-300 bg-blue-600 px-5 py-2.5 text-center text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700"
+              className="w-full sm:w-auto rounded-2xl border border-slate-300 bg-white px-5 py-2.5 text-center text-sm font-semibold text-slate-800 shadow-sm transition hover:bg-slate-100"
             >
               Frequently Asked Questions
             </Link>
