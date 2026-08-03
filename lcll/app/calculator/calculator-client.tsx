@@ -728,7 +728,7 @@ export default function CalculatorClient() {
           <header className="border-b border-slate-200 pb-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
             <div>
               <h1 className="text-xl font-bold text-slate-900">
-                Phosphorus Loading Results: {results.inputs.lake ? results.inputs.lake : 'Unlisted Lake'}
+                Internal Phosphorus Loading Results: {results.inputs.lake ? results.inputs.lake : 'Unlisted Lake'}
               </h1>
             </div>
             
@@ -983,7 +983,7 @@ export default function CalculatorClient() {
         <header className="border-b border-slate-200 px-4 py-3">
           <div className="flex items-center justify-center gap-2 text-center">
             <h1 className="text-lg font-bold leading-tight text-slate-900 sm:text-xl">
-              Lake County Lake Lovers' Phosphorus Loading Calculator
+              Lake County Lake Lovers' Internal Phosphorus Loading Calculator
             </h1>
           </div>
         </header>

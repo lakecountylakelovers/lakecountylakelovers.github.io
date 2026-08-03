@@ -22,7 +22,7 @@ const Home = () => {
         
         <div className="text-center space-y-2">
           <h1 className="text-3xl font-bold text-slate-900 sm:text-4xl tracking-tight">
-            The Phosphorus Calculator
+            The Internal Phosphorus Calculator
           </h1>
         </div>
 
