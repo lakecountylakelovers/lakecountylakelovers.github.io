@@ -621,7 +621,7 @@ const faqData: FAQItem[] = [
             <li>
               <strong>Direct Expert Consultations:</strong> Nürnberg, Gertrud K. <em>Direct Interview & Consulting Guidance</em>.
               <br />
-              <span className="text-sm text-slate-700"><em>Dr. Nürnberg was directly interviewed with specific questions to refine the calculator's logic and reference materials.</em></span>
+              <span className="text-sm text-slate-700"><em>Dr. Gertrud Nürnberg graciously agreed to be interviewed and answered specific questions to refine the calculator's logic and reference materials; she provided additional consultation via email post interview.</em></span>
             </li>
             <li>
               <strong>Alternative Modeling Methods:</strong> Carter, Lindsey D., and Andrew R. Dzialowski. &ldquo;Predicting Sediment Phosphorus Release Rates Using Land-Use and Water-Quality Data.&rdquo; <em>Lake and Reservoir Management</em>, vol. 35, no. 4, 2019, pp. 382–392. DOI: <a href="https://doi.org/10.1080/10402381.2019.1633800" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">10.1080/10402381.2019.1633800</a>.

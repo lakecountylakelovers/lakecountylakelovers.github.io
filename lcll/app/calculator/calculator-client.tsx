@@ -233,6 +233,7 @@ interface CalculationResults {
     isTpRecent: boolean
   }
   internalLake: string | null
+  internalReportLake: string | null
   internalSecchi: string | null
   internalSed: string | null
   recommendedInternal: string | null
@@ -530,6 +531,12 @@ export default function CalculatorClient() {
     const internalLoadingLake = surfaceAreaMSq != null && anoxicFactor != null && releaseRateLake != null ? Number((surfaceAreaMSq * anoxicFactor * releaseRateLake) * (2.20462 * 10 ** (-6))).toFixed(1) : null
     const internalLoadingSecchi = surfaceAreaMSq != null && anoxicFactor != null && releaseRateSecchi != null ? Number((surfaceAreaMSq * anoxicFactor * releaseRateSecchi) * (2.20462 * 10 ** (-6))).toFixed(1) : null
     const internalLoadingSed = surfaceAreaMSq != null && anoxicFactor != null && releaseRateSed != null ? Number((surfaceAreaMSq * anoxicFactor * releaseRateSed) * (2.20462 * 10 ** (-6))).toFixed(1) : null
+    const reportLakePhosphorusUgLP = selectedLake && dataYear && lakeData[selectedLake]?.lakePhosphorus != null
+      ? convertPhosphorusToUgL(lakeData[selectedLake].lakePhosphorus, activeUnit.lakePhosphorus)
+      : null
+    const reportAnoxicFactor = reportLakePhosphorusUgLP != null && osgood != null ? (-35.4 + 44.2 * Math.log10(reportLakePhosphorusUgLP) + 0.95 * (osgood)) : null
+    const reportReleaseRateLake = reportLakePhosphorusUgLP != null ? 12.116 * Math.log10(reportLakePhosphorusUgLP) - 9.708 : null
+    const internalLoadingReportLake = surfaceAreaMSq != null && reportAnoxicFactor != null && reportReleaseRateLake != null ? Number((surfaceAreaMSq * reportAnoxicFactor * reportReleaseRateLake) * (2.20462 * 10 ** (-6))).toFixed(1) : null
 
     let recommendedInternal = internalLoadingSed
     if (!recommendedInternal) {
@@ -562,6 +569,7 @@ export default function CalculatorClient() {
         isTpRecent: isTpRecent,
       },
       internalLake: internalLoadingLake,
+      internalReportLake: internalLoadingReportLake,
       internalSecchi: internalLoadingSecchi,
       internalSed: internalLoadingSed,
       recommendedInternal: recommendedInternal,
@@ -867,6 +875,15 @@ export default function CalculatorClient() {
                     <strong className="text-sm font-mono text-slate-900">{results.internalSecchi ? `${Number(results.internalSecchi).toFixed(0)} lbs/yr` : '—'}</strong>
                   </div>
 
+                  {results.inputs.isTpRecent && results.inputs.dataYear && results.internalReportLake && (
+                    <div className="flex items-center justify-between border-b border-dashed border-rose-200/50 pb-1.5">
+                      <span className="text-sm text-slate-700">
+                        Lake TP Model <span className="text-[10px] uppercase font-bold text-sky-700">({results.inputs.dataYear})</span>:
+                      </span>
+                      <strong className="text-sm font-mono text-slate-900">{`${Number(results.internalReportLake).toFixed(0)} lbs/yr`}</strong>
+                    </div>
+                  )}
+
                   {!results.inputs.isTpRecent && (
                     <div className="flex items-center justify-between pb-1.5">
                       <span className="text-sm text-slate-700">
@@ -911,9 +928,10 @@ export default function CalculatorClient() {
                   <h4 className="text-sm font-bold uppercase tracking-wider text-sky-800">3. Further Interpretations</h4>
                 </div>
 
-                <div className="space-y-3">
+                <div className="space-y-3 h-full flex flex-col justify-between">
 
-                  <div className="">
+                  <div className='space-y-2'>
+                    <div className="">
                     <p className="mt-1 text-sm text-slate-800">
                       {resultTpUgLP != null
                         ? (<span className="text-sm text-slate-800">
@@ -928,18 +946,20 @@ export default function CalculatorClient() {
                     </p>
                   </div>
 
-                  <div className="">
+                  <div className="flex flex-col justify-between">
                     <p className="mt-1 text-sm text-slate-800">
                       An Osgood Index helps explain <strong>the shape of the lake and its tendency to stratify</strong>.
                       In more stratified lakes, the phosphorus, although released, does not enter the upper layers and fertilize the algae as often.
                       An osgood index of <strong>4 or above</strong> indicates a high likelihood of stratification, 
                       though this cutoff can be <strong>less exact in lakes with unusual shape or extreme depths</strong> in some places.
                     </p>
-                    <div className="mt-3 rounded-xl border border-sky-200 bg-sky-100 p-2.5 text-center text-sm font-semibold text-sky-800">
+                  </div>
+                  </div>
+
+                  <div className="mt-3 rounded-xl border border-sky-200 bg-sky-100 p-2.5 text-center text-sm font-semibold text-sky-800">
                       {resultOsgoodIndex != null
                         ? `Osgood Index: ${resultOsgoodIndex.toFixed(2)} -> ${resultIsStratified ? 'Stratified' : 'Not Stratified'}`
                         : 'Osgood Index: —'}
-                    </div>
                   </div>
                 </div>
               </div>
@@ -991,8 +1011,8 @@ export default function CalculatorClient() {
         <div className="rounded-2xl p-3 text-sm text-slate-900">
           <p className="font-semibold">Important Guidelines:</p>
           <ul className="mt-1 list-none list-inside space-y-0.5 text-slate-900">
-            <li>Multiple units are supported for each input. <strong>Select your preferred unit using the dropdown</strong> next to each field. </li>
-            <li>Be careful about the distinction between <strong>Phosphorus & Phosphate</strong></li>
+            <li>Multiple units are supported for each input. <strong>Select your preferred unit using the dropdown</strong> next to each field. </li>             
+            <li>Be careful about the following distinctions: <strong>Phosphorus (P) & Phosphate (PO4)</strong> and <strong>Soluble Reactive Phosphate (SRP) & Total Phosphorus (TP)</strong> </li>
             <li>Ensure all entered data inputs are collected from the <strong>same calendar year</strong> for consistency (Except if you do not have a current-year Total Phosphorus value).</li>
             <li>The<Link href='https://www.lakecounty.gov/health-department' target='_blank' className='text-blue-700 font-semibold underline ml-1'>Lake County Health Department Report</Link> and<Link href='https://vpnww-299518.projects.earthengine.app/view/lcllpilot' target='_blank' className='text-blue-700 font-semibold underline ml-1'>Google Earth Data</Link> will be helpful</li>
           </ul>
