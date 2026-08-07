@@ -935,7 +935,7 @@ export default function CalculatorClient() {
                     <p className="mt-1 text-sm text-slate-800">
                       {resultTpUgLP != null
                         ? (<span className="text-sm text-slate-800">
-                            The TP detection limit is 0.020 mg/L as P. <strong>Your lake was {resultTpOnOrBelowDetectionLimit ? 'on or below' : 'above'} that limit. </strong> 
+                            The <strong>TP detection limit</strong> is 0.020 mg/L as P. <strong>Your lake was {resultTpOnOrBelowDetectionLimit ? 'on or below' : 'above'} that limit. </strong> 
                             When a result is <strong>on or below the detection limit, it usually means the lake is doing well</strong>, and the reported TP model might be an overestimate.
                           </span>)
                         : (<span className="text-sm text-slate-800">
@@ -948,7 +948,7 @@ export default function CalculatorClient() {
 
                   <div className="flex flex-col justify-between">
                     <p className="mt-1 text-sm text-slate-800">
-                      An Osgood Index helps explain <strong>the shape of the lake and its tendency to stratify</strong>.
+                      An <strong>Osgood Index</strong> helps explain <strong>the shape of the lake and its tendency to stratify</strong>.
                       In more stratified lakes, the phosphorus, although released, does not enter the upper layers and fertilize the algae as often.
                       An osgood index of <strong>4 or above</strong> indicates a high likelihood of stratification, 
                       though this cutoff can be <strong>less exact in lakes with unusual shape or extreme depths</strong> in some places.
