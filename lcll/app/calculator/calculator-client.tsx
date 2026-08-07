@@ -851,7 +851,7 @@ export default function CalculatorClient() {
                 <div>
                   <h4 className="text-sm font-bold uppercase tracking-wider text-rose-800">1. Internal Loading</h4>
                   <p className="text-sm text-slate-800 mt-1">
-                    The result labeled Est. Internal Phosphorus Loading is the most reliable estimate. <strong>Treat all of the measurements as a range of possible values</strong> rather than believing in a single precise value. <strong>The Total Phosphorus model must be used with caution</strong>, since if the data was from an old lake report, it is representative of an older condition of the lake.
+                    The result labeled Estimated Internal Phosphorus Loading is the most reliable estimate. <strong>Treat all of the measurements as a range of possible values</strong> rather than believing in a single precise value. <strong>The Total Phosphorus model must be used with caution</strong>, since if the data was from an old lake report, it is representative of an older condition of the lake.
                   </p>
                 </div>
 
@@ -896,7 +896,7 @@ export default function CalculatorClient() {
 
                 <div className="mt-auto pt-4">
                   <div className="rounded-xl border border-rose-300 bg-rose-100 p-2.5 text-center text-sm font-semibold text-rose-800">
-                    Est. Internal Phosphorus Loading: {results.recommendedInternal ? `${Number(results.recommendedInternal).toFixed(0)} lbs/year` : '—'}
+                    Estimated Internal Phosphorus Loading: {results.recommendedInternal ? `${Number(results.recommendedInternal).toFixed(0)} lbs/year` : '—'}
                   </div>
                 </div>
               </div>
@@ -916,7 +916,7 @@ export default function CalculatorClient() {
 
                 <div className="mt-auto pt-4">
                   <div className="rounded-xl border border-emerald-300 bg-emerald-100 p-2.5 text-center text-sm font-semibold text-emerald-800">
-                    Est. Wet Algae: {results.recommendedInternal ? `${(Number(results.recommendedInternal) * 500).toFixed(0)} lbs/year` : '—'}
+                    Estimated Wet Algae: {results.recommendedInternal ? `${(Number(results.recommendedInternal) * 500).toFixed(0)} lbs/year` : '—'}
                   </div>
                 </div>
               </div>
