@@ -987,7 +987,7 @@ export default function CalculatorClient() {
             <div className="p-1">
               <span className="block font-bold text-slate-700 uppercase tracking-wide mb-1.5">Scientific Advisory Board</span>
               <p className="leading-relaxed text-sm">
-                Developed under the technical advisement of <strong>Paul Spiewak</strong> (former analytical chemist & science enthusiast), <strong>Allen Melcer</strong> (former environmental manager at the US Environmental Protection Agency), and <strong>James Bland</strong> (former contributor to freshwater ecosystems at the Shedd Aquarium and environmental sciences professor). Project management was coordinated by <strong>Becky Sawle</strong> (former AbbVie Innovation Projects Lead).
+                Developed under the technical advisement of <strong>Paul Spiewak</strong> (former analytical chemist & science enthusiast), <strong>Allen Melcer</strong> (former environmental manager at the US Environmental Protection Agency), and <strong>James Bland</strong> (former US EPA, founder of Integrated Lakes Management, volunteer researcher at Shedd Aquarium, and lake manager for 45 years). Project management was coordinated by <strong>Becky Sawle</strong> (former AbbVie Innovation Projects Lead).
               </p>
             </div>
           </footer>
