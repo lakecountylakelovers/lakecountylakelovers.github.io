@@ -61,7 +61,7 @@ const helpCopy: Record<HelpKey, { title: string; description: string; note: stri
   sedimentPhosphorus: {
     title: 'Total Phosphorous (Sediment)',
     description:
-      'Enter the total phosphorus in the lake\'s sediment. This is typically received from a professional sediment fractionation test. If unavailable, leave this blank and use alternative estimation methods.',
+      'Enter the total phosphorus in the lake\'s sediment, as dry weight. This is typically received from a professional sediment fractionation test. If unavailable, leave this blank and use alternative estimation methods.',
     note: 'Optional input',
   },
   secchi: {
