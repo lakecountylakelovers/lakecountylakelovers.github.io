@@ -137,7 +137,7 @@ const faqData: FAQItem[] = [
         </p>
 
         <p>
-          <strong>When phosphorus enters a lake faster than it leaves, it builds up in the sediments, making internal loading an important driver of long-term water quality that becomes more difficult to manage than preventing the phosphorus from entering in the first place.</strong>
+          <strong>When more phosphorus enters a lake than it leaves, it builds up in the sediments, making internal loading an important driver of long-term water quality that becomes more difficult to manage than preventing the phosphorus from entering in the first place.</strong>
         </p>
       </div>
     </div>
