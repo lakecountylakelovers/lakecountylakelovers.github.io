@@ -499,7 +499,7 @@ const faqData: FAQItem[] = [
             </ul>
             <ul className="list-disc pl-5 text-sm space-y-1 font-mono text-emerald-300">
               <li>TP<sub>Water Column</sub> is the total phosphorus concentration in the water column, in ug/l</li>
-              <li>TP<sub>Sed</sub> is the Total Phosphorus in the Sediment, in mg/g</li>
+              <li>TP<sub>Sed</sub> is the Total Phosphorus in the Sediment, in mg/g of dry weight</li>
               <li>SD is the Secchi Depth, in meters</li>
             </ul>
           </div>
