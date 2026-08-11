@@ -910,7 +910,7 @@ export default function CalculatorClient() {
                     Internal Phosphorus loading supports <strong>algal and cyanobacteria growth</strong>. Even when not the most predominant source, it continuously works together with <strong>urbanization, agriculture, climate change, and industrialization</strong> in helping form algal blooms.
                   </p>
                   <p className="text-sm text-slate-800 mt-2">
-                    To further <strong>understand the impact of internal load on your lake</strong>, we use a very simplified conversion to show how the internal loading in your lake contributes to algal and cyanobacteria growth. This is <strong>a very rough estimate</strong>, assuming approximately 500 pounds of wet algae per pound of internal loading.
+                    To further <strong>understand the impact of internal load on your lake</strong>, we use a very simplified conversion to show how the internal loading in your lake contributes to algal and cyanobacteria growth. This is <strong>a very rough estimate</strong>, assuming approximately 500 pounds of wet algae per pound of internal loading (Wetzel, Limnology, 2nd Edition).
                   </p>
                 </div>
 
